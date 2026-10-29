@@ -7,382 +7,467 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>Kalkulator prowizji</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap">
 <style>
 :root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 body{margin:0}
 [hidden]{display:none!important}
 
-/* Layout: jedna kolumna jak notes rozliczeń; lepki pasek z sumą u góry, przycisk dodawania przy dolnej krawędzi */
+/* Layout: ekran główny = suma + lista klientów; wpisywanie na osobnym ekranie z krokami 1-2-3 i prowizją przyklejoną na dole */
 :root{
-  --bg:#f3f5f2; --card:#ffffff; --ink:#17251e; --muted:#5d6d64; --line:#dde4de;
-  --accent:#1f6b4f; --accent-ink:#ffffff; --accent-soft:#e3efe8; --danger:#b23a2b; --danger-soft:#f8e5e1;
+  --bg:#f2f4f1; --card:#ffffff; --ink:#15231c; --muted:#5b6b62; --line:#d9e1db;
+  --accent:#1f6b4f; --accent-ink:#ffffff; --accent-soft:#e2efe7; --danger:#b23a2b; --danger-soft:#f8e4e0;
   --field:#f7f9f7;
-  --f-body:"Figtree",system-ui,-apple-system,"Segoe UI",sans-serif;
-  --f-num:"JetBrains Mono",ui-monospace,"SF Mono",Menlo,monospace;
+  --f-body:"Figtree",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
-  --bg:#111814; --card:#18221d; --ink:#e6eee9; --muted:#97a89e; --line:#2a3731;
-  --accent:#4fb889; --accent-ink:#0b1510; --accent-soft:#1d3329; --danger:#f08a7a; --danger-soft:#3a201b;
-  --field:#141d18; color-scheme:dark}}
+  --bg:#0f1612; --card:#17211c; --ink:#e8efea; --muted:#9aaba1; --line:#2a3731;
+  --accent:#52bd8d; --accent-ink:#0a140f; --accent-soft:#1b3127; --danger:#f08a7a; --danger-soft:#3a201b;
+  --field:#121b16; color-scheme:dark}}
 :root[data-theme="dark"]{
-  --bg:#111814; --card:#18221d; --ink:#e6eee9; --muted:#97a89e; --line:#2a3731;
-  --accent:#4fb889; --accent-ink:#0b1510; --accent-soft:#1d3329; --danger:#f08a7a; --danger-soft:#3a201b;
-  --field:#141d18; color-scheme:dark}
+  --bg:#0f1612; --card:#17211c; --ink:#e8efea; --muted:#9aaba1; --line:#2a3731;
+  --accent:#52bd8d; --accent-ink:#0a140f; --accent-soft:#1b3127; --danger:#f08a7a; --danger-soft:#3a201b;
+  --field:#121b16; color-scheme:dark}
 *{box-sizing:border-box}
-body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.45}
-body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--accent)}
-.wrap{max-width:640px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 120px}
-.num{font-family:var(--f-num);font-variant-numeric:tabular-nums}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.45;font-variant-numeric:tabular-nums}
+body.locked{overflow:hidden}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:30;background:var(--accent)}
+.gut{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.inner{max-width:620px;margin:0 auto}
+button{font:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 
-/* pasek podsumowania */
-.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--accent);color:var(--accent-ink);
-  margin-left:calc(-1*max(16px,env(safe-area-inset-left,0px)));margin-right:calc(-1*max(16px,env(safe-area-inset-right,0px)));
-  padding:14px max(16px,env(safe-area-inset-right,0px)) 14px max(16px,env(safe-area-inset-left,0px))}
-.top-row{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap}
-.top h1{margin:0;font-size:13px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;opacity:.85}
-.total{font-family:var(--f-num);font-size:30px;font-weight:700;line-height:1.1;margin-top:2px}
-.top-meta{font-size:12.5px;opacity:.85;text-align:right}
-.top-meta b{font-family:var(--f-num);font-weight:500}
-.sync{font-size:11.5px;opacity:.75;margin-top:4px}
+/* ===== ekran główny ===== */
+.top{background:var(--accent);color:var(--accent-ink);padding-block:18px 20px}
+.top .lbl{font-size:14px;font-weight:600;opacity:.9}
+.top .total{font-size:40px;font-weight:800;line-height:1.1;letter-spacing:-.01em;margin-top:2px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}
+.stat{background:rgba(255,255,255,.13);border-radius:10px;padding:8px 10px;min-width:0}
+.stat .k{font-size:12px;opacity:.85}
+.stat .v{font-weight:700;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
-/* ustawienia */
-details.settings{margin-top:16px;background:var(--card);border:1px solid var(--line);border-radius:12px}
-details.settings summary{cursor:pointer;padding:12px 14px;font-weight:600;list-style:none;display:flex;justify-content:space-between;gap:8px}
-details.settings summary::-webkit-details-marker{display:none}
-details.settings summary .hint{font-weight:400;color:var(--muted);font-size:13px;text-align:right}
-.set-body{padding:0 14px 14px;display:grid;gap:12px}
-.note{font-size:13px;color:var(--muted);margin:0}
+.rule{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-top:14px;width:100%;color:var(--ink);text-align:left}
+.rule b{font-weight:700}
+.rule .ch{color:var(--accent);font-weight:700;font-size:14px;flex-shrink:0}
+.setpanel{background:var(--card);border:1px solid var(--line);border-top:0;border-radius:0 0 12px 12px;margin-top:-8px;padding:18px 14px 14px;display:grid;gap:14px}
 
-label.f{display:grid;gap:4px;font-size:12.5px;color:var(--muted);font-weight:500;min-width:0}
-input,select,textarea{font:inherit;font-size:16px;color:var(--ink);background:var(--field);border:1px solid var(--line);border-radius:9px;padding:10px 11px;width:100%;min-width:0}
-input:focus,select:focus,textarea:focus{outline:2px solid var(--accent);outline-offset:0;border-color:transparent}
-input.money{font-family:var(--f-num);text-align:right}
-.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.grid3{display:grid;grid-template-columns:1fr 1fr 88px;gap:10px}
-@media (max-width:420px){.grid3{grid-template-columns:1fr 1fr}.grid3 .vat{grid-column:1/-1}}
-
-/* klienci */
-.list{display:grid;gap:12px;margin-top:16px}
-.client{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
-.c-head{display:flex;align-items:center;gap:10px;padding:13px 14px;cursor:pointer;user-select:none;width:100%;background:none;border:0;color:inherit;font:inherit;text-align:left}
-.c-head:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
-.c-title{flex:1;min-width:0}
-.c-name{font-weight:700;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.c-sub{font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.c-com{text-align:right;flex-shrink:0}
-.c-com .v{font-family:var(--f-num);font-weight:700;color:var(--accent);font-size:16px}
-.c-com .l{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
-.chev{width:18px;height:18px;flex-shrink:0;color:var(--muted);transition:transform .15s}
-.client.open .chev{transform:rotate(180deg)}
-.c-body{padding:2px 14px 14px;display:grid;gap:12px;border-top:1px solid var(--line);padding-top:14px}
-.client:not(.open) .c-body{display:none}
-.badge{display:inline-block;font-size:11px;font-weight:600;background:var(--accent-soft);color:var(--accent);border-radius:99px;padding:1px 8px;margin-left:6px;vertical-align:2px}
-
-.sec-t{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:4px 0 0}
-.costs{display:grid;gap:8px}
-.cost{display:grid;grid-template-columns:1fr 120px 40px;gap:8px;align-items:center}
-.icon-btn{width:40px;height:42px;border-radius:9px;border:1px solid var(--line);background:var(--field);color:var(--muted);font-size:20px;line-height:1;cursor:pointer;display:grid;place-items:center}
-.icon-btn:hover{color:var(--danger);border-color:var(--danger)}
-.link-btn{justify-self:start;background:none;border:1px dashed var(--accent);color:var(--accent);border-radius:9px;padding:9px 12px;font:inherit;font-weight:600;font-size:14px;cursor:pointer}
-.chips{display:flex;flex-wrap:wrap;gap:6px}
-.chip{border:1px solid var(--line);background:var(--field);color:var(--ink);border-radius:99px;padding:5px 11px;font:inherit;font-size:13px;cursor:pointer}
-.chip:hover{border-color:var(--accent);color:var(--accent)}
-
-/* rozliczenie */
-.calc{background:var(--accent-soft);border-radius:11px;padding:12px 13px;display:grid;gap:4px}
-.calc .r{display:flex;justify-content:space-between;gap:10px;font-size:14px}
-.calc .r span:last-child{font-family:var(--f-num);font-variant-numeric:tabular-nums;white-space:nowrap}
-.calc .r.sum{border-top:1px solid var(--line);margin-top:4px;padding-top:6px;font-weight:700}
-.calc .r.big{font-size:17px;color:var(--accent);font-weight:800}
-.calc .warn{font-size:12.5px;color:var(--danger)}
-
-.c-actions{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:center}
-.del{background:none;border:0;color:var(--danger);font:inherit;font-size:14px;cursor:pointer;padding:6px 0}
-.del.confirm{background:var(--danger-soft);border-radius:8px;padding:6px 10px;font-weight:700}
-.dup{background:none;border:0;color:var(--muted);font:inherit;font-size:14px;cursor:pointer;padding:6px 0}
-
-.empty{text-align:center;padding:36px 16px;color:var(--muted);background:var(--card);border:1px dashed var(--line);border-radius:14px}
+.h2{display:flex;justify-content:space-between;align-items:baseline;margin:22px 2px 10px}
+.h2 h2{margin:0;font-size:18px}
+.h2 span{color:var(--muted);font-size:14px}
+.list{display:grid;gap:10px;padding-bottom:110px}
+.card{display:block;width:100%;text-align:left;background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:14px;padding:14px}
+.card:hover{border-color:var(--accent)}
+.card .row1{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
+.card .name{font-weight:700;font-size:17px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.card .date{color:var(--muted);font-size:13px;flex-shrink:0}
+.card .what{color:var(--muted);font-size:14px;margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.card .nums{display:grid;grid-template-columns:1fr 1fr 1.15fr;gap:8px;margin-top:12px}
+.card .nums div{min-width:0}
+.card .nums .k{font-size:12px;color:var(--muted)}
+.card .nums .v{font-weight:600;white-space:nowrap}
+.card .nums .com{background:var(--accent-soft);border-radius:9px;padding:6px 9px;margin:-6px 0}
+.card .nums .com .v{color:var(--accent);font-weight:800;font-size:17px}
+.card .nums .com .k{color:var(--accent)}
+.empty{text-align:center;padding:32px 18px;color:var(--muted);background:var(--card);border:1px dashed var(--line);border-radius:14px}
 .empty b{display:block;color:var(--ink);font-size:17px;margin-bottom:4px}
 
-.fab{position:fixed;left:0;right:0;bottom:0;z-index:6;padding:12px max(16px,env(safe-area-inset-right,0px)) calc(12px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));
-  background:linear-gradient(to top,var(--bg) 70%,transparent)}
-.fab button{display:block;width:100%;max-width:608px;margin:0 auto;background:var(--accent);color:var(--accent-ink);border:0;border-radius:12px;padding:15px;font:inherit;font-weight:700;font-size:16px;cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,.18)}
-.fab button:focus-visible,.link-btn:focus-visible,.chip:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
-@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+.fab{position:fixed;left:0;right:0;bottom:0;z-index:10;padding-top:14px;padding-bottom:calc(14px + env(safe-area-inset-bottom,0px));background:linear-gradient(to top,var(--bg) 65%,transparent)}
+.btn{display:block;width:100%;border:0;border-radius:12px;padding:15px;font-weight:700;font-size:17px;background:var(--accent);color:var(--accent-ink)}
+.btn.ghost{background:var(--card);color:var(--ink);border:1px solid var(--line)}
+
+/* ===== ekran edycji ===== */
+.sheet{position:fixed;inset:0;z-index:20;background:var(--bg);overflow-y:auto;-webkit-overflow-scrolling:touch;padding-top:env(safe-area-inset-top,0px)}
+.bar{position:sticky;top:0;z-index:2;background:var(--bg);border-bottom:1px solid var(--line)}
+.bar .inner{display:flex;align-items:center;gap:8px;padding-block:10px}
+.back{background:none;border:0;color:var(--accent);font-weight:700;padding:8px 4px;font-size:16px}
+.bar .t{flex:1;text-align:center;font-weight:700;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bar .sp{width:70px}
+.form{display:grid;gap:16px;padding-block:16px 150px}
+.step{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 14px;display:grid;gap:12px}
+.step h3{margin:0;font-size:16px;display:flex;align-items:center;gap:9px}
+.step h3 i{font-style:normal;display:grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--accent);color:var(--accent-ink);font-size:13px;font-weight:800;flex-shrink:0}
+label.f{display:grid;gap:5px;font-size:14px;font-weight:600;min-width:0}
+input,select{font:inherit;font-size:17px;color:var(--ink);background:var(--field);border:1px solid var(--line);border-radius:10px;padding:12px;width:100%;min-width:0}
+input:focus,select:focus{outline:2px solid var(--accent);outline-offset:0;border-color:transparent}
+input::placeholder{color:var(--muted);opacity:.7}
+.money-wrap{position:relative}
+.money-wrap input{text-align:right;padding-right:38px}
+.money-wrap::after{content:"zł";position:absolute;right:12px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:15px;pointer-events:none}
+.pct::after{content:"%"}
+.big input{font-size:24px;font-weight:700;padding-block:14px}
+.seg{display:grid;grid-template-columns:1fr 1fr;background:var(--field);border:1px solid var(--line);border-radius:11px;padding:3px;gap:3px}
+.seg button{border:0;background:none;border-radius:8px;padding:10px;font-weight:700;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--card);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.15)}
+.vats{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.vats .k{font-size:14px;font-weight:600;margin-right:4px}
+.pill{border:1px solid var(--line);background:var(--field);color:var(--ink);border-radius:99px;padding:6px 13px;font-size:14px;font-weight:600}
+.pill[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.other{background:var(--accent-soft);border-radius:10px;padding:10px 12px;font-size:15px;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.other b{font-weight:700}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media (max-width:380px){.two{grid-template-columns:1fr}}
+
+.cost{display:grid;grid-template-columns:1fr 130px 44px;gap:8px;align-items:center}
+.x{width:44px;height:48px;border-radius:10px;border:1px solid var(--line);background:var(--field);color:var(--muted);font-size:22px;line-height:1}
+.x:hover{color:var(--danger);border-color:var(--danger)}
+.addc{border:1px dashed var(--accent);background:none;color:var(--accent);border-radius:10px;padding:11px;font-weight:700}
+.quick{display:flex;gap:6px;flex-wrap:wrap}
+.quick .pill{font-weight:500}
+.costsum{display:flex;justify-content:space-between;font-weight:700;border-top:1px solid var(--line);padding-top:10px}
+
+.result{background:var(--accent);color:var(--accent-ink);border-radius:14px;padding:16px;display:grid;gap:6px}
+.result .r{display:flex;justify-content:space-between;gap:10px;font-size:15px;opacity:.92}
+.result .r.base{border-top:1px solid rgba(255,255,255,.3);padding-top:8px;opacity:1;font-weight:700}
+.result .r.com{font-size:24px;font-weight:800;opacity:1;margin-top:2px}
+.result .warn{font-size:13.5px;background:rgba(0,0,0,.18);border-radius:8px;padding:6px 9px}
+.acts{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.lnk{background:none;border:0;color:var(--muted);padding:8px 0;font-size:15px}
+.lnk.danger{color:var(--danger)}
+.lnk.danger.sure{background:var(--danger-soft);border-radius:8px;padding:8px 12px;font-weight:700}
+
+.foot{position:fixed;left:0;right:0;bottom:0;z-index:21;background:var(--card);border-top:1px solid var(--line);padding-top:12px;padding-bottom:calc(12px + env(safe-area-inset-bottom,0px))}
+.foot .inner{display:flex;align-items:center;gap:12px}
+.foot .k{font-size:13px;color:var(--muted)}
+.foot .v{font-size:22px;font-weight:800;color:var(--accent);white-space:nowrap}
+.foot .btn{width:auto;padding:13px 26px;margin-left:auto}
+.note{font-size:14px;color:var(--muted);margin:0}
+.sync{font-size:12.5px;opacity:.8;margin-top:10px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
 </style>
 </head>
 <body>
-<div class="wrap">
-  <header class="top">
-    <div class="top-row">
-      <div>
-        <h1>Twoja prowizja razem</h1>
-        <div class="total" id="sumCom">0,00 zł</div>
-      </div>
-      <div class="top-meta">
-        <div>Klientów: <b id="sumCount">0</b></div>
-        <div>Faktury netto: <b id="sumNet">0,00</b></div>
-        <div>Koszty: <b id="sumCost">0,00</b></div>
-      </div>
+<!-- ekran główny -->
+<header class="top gut">
+  <div class="inner">
+    <div class="lbl">Twoja prowizja łącznie</div>
+    <div class="total" id="sumCom">0,00 zł</div>
+    <div class="stats">
+      <div class="stat"><div class="k">Klienci</div><div class="v" id="sumCount">0</div></div>
+      <div class="stat"><div class="k">Faktury netto</div><div class="v" id="sumNet">0 zł</div></div>
+      <div class="stat"><div class="k">Koszty</div><div class="v" id="sumCost">0 zł</div></div>
     </div>
     <div class="sync" id="sync">Dane zapisują się w tej przeglądarce</div>
-  </header>
+  </div>
+</header>
 
-  <details class="settings" id="settings">
-    <summary><span>Ustawienia prowizji</span><span class="hint" id="setHint"></span></summary>
-    <div class="set-body">
-      <div class="grid2">
-        <label class="f">Stawka prowizji (%)
-          <input id="rate" class="money" inputmode="decimal" autocomplete="off">
+<main class="gut">
+  <div class="inner">
+    <button type="button" class="rule" id="ruleBtn" aria-expanded="false">
+      <span>Liczę <b id="ruleTxt">20% od netto minus koszty</b></span><span class="ch" id="ruleCh">Zmień</span>
+    </button>
+    <div class="setpanel" id="setPanel" hidden>
+      <div class="two">
+        <label class="f">Stawka prowizji
+          <div class="money-wrap pct"><input id="rate" inputmode="decimal" autocomplete="off"></div>
         </label>
-        <label class="f">Domyślny VAT (%)
-          <select id="vatDefault"><option>23</option><option>8</option><option>5</option><option>0</option></select>
+        <label class="f">VAT dla nowych faktur
+          <select id="vatDefault"><option value="23">23%</option><option value="8">8%</option><option value="5">5%</option><option value="0">0%</option></select>
         </label>
       </div>
-      <label class="f">Od czego liczyć prowizję
+      <label class="f">Prowizja liczona od
         <select id="base">
-          <option value="net-cost">Netto faktury minus koszty</option>
-          <option value="net">Netto faktury (bez odliczania kosztów)</option>
-          <option value="gross-cost">Brutto faktury minus koszty</option>
-          <option value="gross">Brutto faktury (bez odliczania kosztów)</option>
+          <option value="net-cost">kwoty netto minus koszty</option>
+          <option value="net">całej kwoty netto</option>
+          <option value="gross-cost">kwoty brutto minus koszty</option>
+          <option value="gross">całej kwoty brutto</option>
         </select>
       </label>
-      <p class="note">Koszty wpisujesz w tej samej wartości co podstawę: przy liczeniu od netto wpisuj koszty netto, przy brutto koszty brutto.</p>
+      <p class="note">Koszty wpisuj tak samo jak podstawę: przy liczeniu od netto koszty netto, przy brutto koszty brutto.</p>
     </div>
-  </details>
 
-  <div class="list" id="list"></div>
-</div>
+    <div class="h2"><h2>Klienci</h2><span>dotknij, żeby edytować</span></div>
+    <div class="list" id="list"></div>
+  </div>
+</main>
 
-<div class="fab"><button id="addBtn" type="button">+ Dodaj klienta</button></div>
+<div class="fab gut"><div class="inner"><button type="button" class="btn" id="addBtn">+ Dodaj klienta</button></div></div>
+
+<!-- ekran edycji -->
+<section class="sheet" id="sheet" hidden aria-label="Edycja klienta">
+  <div class="bar gut"><div class="inner">
+    <button type="button" class="back" data-act="close">‹ Lista</button>
+    <div class="t" id="sheetTitle">Nowy klient</div>
+    <div class="sp"></div>
+  </div></div>
+  <div class="gut"><div class="inner form" id="form"></div></div>
+  <div class="foot gut"><div class="inner">
+    <div><div class="k">Twoja prowizja</div><div class="v" id="footCom">0,00 zł</div></div>
+    <button type="button" class="btn" data-act="close">Gotowe</button>
+  </div></div>
+</section>
 
 <script>
 const LS_KEY = "kalk-prowizji-v1";
 const COST_PRESETS = ["Materiały","Robocizna","Transport","Podwykonawca","Sprzęt"];
-const BASE_LABEL = {"net-cost":"od netto minus koszty","net":"od netto","gross-cost":"od brutto minus koszty","gross":"od brutto"};
+const BASE_TXT = {"net-cost":"od netto minus koszty","net":"od całego netto","gross-cost":"od brutto minus koszty","gross":"od całego brutto"};
 
 let state = null;
-let openId = null;
-let pendingDelete = null;
+let editId = null;
+let sureDelete = false;
 
 const uid = () => Math.random().toString(36).slice(2, 10);
 const round2 = n => Math.round((n + Number.EPSILON) * 100) / 100;
-const parseNum = s => { if (s == null) return 0; const v = parseFloat(String(s).replace(/\s| /g, "").replace(",", ".")); return isFinite(v) ? v : 0; };
+const parseNum = s => { const v = parseFloat(String(s ?? "").replace(/[\s ]/g, "").replace(",", ".")); return isFinite(v) ? v : 0; };
 const fmt = n => n.toLocaleString("pl-PL", {minimumFractionDigits:2, maximumFractionDigits:2});
+const fmt0 = n => n.toLocaleString("pl-PL", {maximumFractionDigits:0});
 const fmtIn = n => n ? String(round2(n)).replace(".", ",") : "";
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const today = () => new Date().toISOString().slice(0,10);
+const fmtDate = d => { if (!d) return ""; const [y,m,dd] = d.split("-"); return `${dd}.${m}.${y}`; };
 
-function sampleState(){
-  return {
-    rate: 20, base: "net-cost", vat: 23,
-    clients: [{
-      id: uid(), example: true, name: "Kowalski Sp. z o.o.", what: "Remont łazienki, ul. Lipowa 4",
-      date: new Date().toISOString().slice(0,10), amount: 15000, amountType: "netto", vat: 23,
-      costs: [{id: uid(), name: "Materiały", value: 4200}, {id: uid(), name: "Robocizna", value: 3800}]
-    }]
-  };
-}
 function newClient(){
-  return {id: uid(), name: "", what: "", date: new Date().toISOString().slice(0,10), amount: 0, amountType: "netto", vat: state.vat, costs: [{id: uid(), name: "Materiały", value: 0}, {id: uid(), name: "Robocizna", value: 0}]};
+  return {id: uid(), name: "", what: "", date: today(), amount: 0, amountType: "netto", vat: state.vat, costs: [{id: uid(), name: "Materiały", value: 0}, {id: uid(), name: "Robocizna", value: 0}]};
 }
+const isBlank = c => !c.name.trim() && !c.what.trim() && !c.amount && c.costs.every(k => !k.value);
 
 function amounts(c){
   const v = (c.vat ?? 23) / 100;
-  const net = c.amountType === "brutto" ? c.amount / (1 + v) : c.amount;
-  const gross = c.amountType === "brutto" ? c.amount : c.amount * (1 + v);
-  return {net: round2(net), gross: round2(gross)};
+  return c.amountType === "brutto"
+    ? {net: round2(c.amount / (1 + v)), gross: round2(c.amount)}
+    : {net: round2(c.amount), gross: round2(c.amount * (1 + v))};
 }
 function calc(c){
   const {net, gross} = amounts(c);
   const costs = round2(c.costs.reduce((s, x) => s + (Number(x.value) || 0), 0));
-  const useGross = state.base.startsWith("gross");
-  const minusCost = state.base.endsWith("cost");
+  const useGross = state.base.startsWith("gross"), minusCost = state.base.endsWith("cost");
   const start = useGross ? gross : net;
-  const base = minusCost ? start - costs : start;
-  const com = round2(Math.max(0, base) * state.rate / 100);
-  return {net, gross, costs, start, base: round2(base), com, useGross, minusCost};
+  const base = round2(minusCost ? start - costs : start);
+  return {net, gross, costs, start, base, com: round2(Math.max(0, base) * state.rate / 100), useGross, minusCost};
 }
 
-/* ---------- zapis (w przeglądarce) ---------- */
-function save(){ try { localStorage.setItem(LS_KEY, JSON.stringify(state)); } catch(e){} }
+/* ---------- zapis ---------- */
+let docRef = null, saveTimer = null, saving = Promise.resolve();
+const setSync = t => document.getElementById("sync").textContent = t;
+function saveLocal(){ try { localStorage.setItem(LS_KEY, JSON.stringify(state)); } catch(e){} }
+function save(){
+  saveLocal();
+  if (!docRef) return;
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => {
+    const snap = JSON.parse(JSON.stringify({...state, savedAt: Date.now()}));
+    saving = saving.then(() => docRef.set(snap)).then(
+      () => setSync("Zapisano na koncie, widać na każdym urządzeniu"),
+      () => setSync("Nie udało się zapisać na koncie, dane są w tej przeglądarce"));
+  }, 700);
+}
+function changed(){ state._touched = true; state._savedAt = Date.now(); save(); }
 function normalize(s){
   s = s || {};
-  return {rate: s.rate ?? 20, base: s.base || "net-cost", vat: s.vat ?? 23, clients: Array.isArray(s.clients) ? s.clients : []};
+  const clients = (Array.isArray(s.clients) ? s.clients : []).filter(c => !c.example);
+  return {rate: s.rate ?? 20, base: s.base || "net-cost", vat: s.vat ?? 23, clients, _touched: s._touched, _savedAt: s._savedAt || s.savedAt};
 }
-function changed(){ save(); }
+async function connectDb(){
+  try {
+    if (!window.claude?.use) return;
+    const [d, u] = await Promise.all([claude.use("db"), claude.use("user")]);
+    if (!d || !u) return;
+    const id = await u.id();
+    if (!id) return;
+    docRef = d.doc("data/users/" + id + "/main");
+    const snap = await docRef.get();
+    if (snap.exists) {
+      const remote = snap.data();
+      if (!state._touched || (remote.savedAt || 0) >= (state._savedAt || 0)) {
+        const keepEditing = editId && !state.clients.some(c => c.id === editId && !isBlank(c)) ? state.clients.find(c => c.id === editId) : null;
+        state = normalize(JSON.parse(JSON.stringify(remote)));
+        if (keepEditing) state.clients.unshift(keepEditing);
+        saveLocal(); renderMain(); if (editId && !keepEditing) renderForm();
+      } else save();
+    } else if (state._touched) save();
+    setSync("Zapisano na koncie, widać na każdym urządzeniu");
+  } catch(e){}
+}
 
-/* ---------- widok ---------- */
-const chev = '<svg class="chev" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 8l5 5 5-5"/></svg>';
-
-function render(){
+/* ---------- ekran główny ---------- */
+function renderMain(){
   document.getElementById("rate").value = fmtIn(state.rate);
   document.getElementById("vatDefault").value = String(state.vat);
   document.getElementById("base").value = state.base;
+  document.getElementById("ruleTxt").textContent = (fmtIn(state.rate) || "0") + "% " + BASE_TXT[state.base];
+  const shown = state.clients.filter(c => !isBlank(c));
   const list = document.getElementById("list");
-  if (!state.clients.length) {
-    list.innerHTML = '<div class="empty"><b>Brak klientów</b>Dodaj pierwszą fakturę przyciskiem na dole ekranu.</div>';
-  } else {
-    list.innerHTML = state.clients.map(clientHtml).join("");
-  }
-  updateTotals();
-}
-
-function clientHtml(c){
-  const r = calc(c), open = c.id === openId;
-  const shown = c.amountType === "brutto" ? {n: amounts(c).net, b: c.amount} : {n: c.amount, b: amounts(c).gross};
-  return `<article class="client${open ? " open" : ""}" data-id="${c.id}">
-    <button type="button" class="c-head" data-act="toggle" aria-expanded="${open}">
-      <div class="c-title">
-        <div class="c-name" data-out="name">${esc(c.name) || "Nowy klient"}${c.example ? '<span class="badge">przykład</span>' : ""}</div>
-        <div class="c-sub" data-out="sub">${esc(subLine(c, r))}</div>
+  list.innerHTML = shown.length ? shown.map(c => {
+    const r = calc(c);
+    return `<button type="button" class="card" data-open="${c.id}">
+      <div class="row1"><span class="name">${esc(c.name) || "Bez nazwy"}</span><span class="date">${fmtDate(c.date)}</span></div>
+      ${c.what ? `<div class="what">${esc(c.what)}</div>` : ""}
+      <div class="nums">
+        <div><div class="k">Netto</div><div class="v">${fmt(r.net)}</div></div>
+        <div><div class="k">Koszty</div><div class="v">${fmt(r.costs)}</div></div>
+        <div class="com"><div class="k">Prowizja</div><div class="v">${fmt(r.com)} zł</div></div>
       </div>
-      <div class="c-com"><div class="l">prowizja</div><div class="v" data-out="com">${fmt(r.com)} zł</div></div>
-      ${chev}
-    </button>
-    <div class="c-body">
-      ${c.example ? '<p class="note">To przykładowy wpis, żeby pokazać jak działa liczenie. Nadpisz go swoimi danymi albo usuń.</p>' : ""}
-      <div class="grid2">
-        <label class="f">Nazwa klienta<input data-f="name" value="${esc(c.name)}" placeholder="np. Nowak Budownictwo" autocomplete="off"></label>
-        <label class="f">Data faktury<input data-f="date" type="date" value="${esc(c.date)}"></label>
-      </div>
-      <label class="f">Za co (opis faktury)<input data-f="what" value="${esc(c.what)}" placeholder="np. montaż okien, 6 szt." autocomplete="off"></label>
-      <div class="grid3">
-        <label class="f">Kwota netto (zł)<input class="money" data-f="net" inputmode="decimal" value="${fmtIn(shown.n)}" placeholder="0,00" autocomplete="off"></label>
-        <label class="f">Kwota brutto (zł)<input class="money" data-f="gross" inputmode="decimal" value="${fmtIn(shown.b)}" placeholder="0,00" autocomplete="off"></label>
-        <label class="f vat">VAT<select data-f="vat">${[23,8,5,0].map(v => `<option value="${v}"${v === c.vat ? " selected" : ""}>${v}%</option>`).join("")}</select></label>
-      </div>
-
-      <p class="sec-t">Koszty stałe</p>
-      <div class="costs">
-        ${c.costs.map(k => `<div class="cost" data-cost="${k.id}">
-          <input data-cf="name" value="${esc(k.name)}" placeholder="Nazwa kosztu" aria-label="Nazwa kosztu" autocomplete="off">
-          <input class="money" data-cf="value" inputmode="decimal" value="${fmtIn(k.value)}" placeholder="0,00" aria-label="Kwota kosztu" autocomplete="off">
-          <button type="button" class="icon-btn" data-act="delcost" aria-label="Usuń koszt">×</button>
-        </div>`).join("")}
-      </div>
-      <div class="chips">
-        <button type="button" class="chip" data-act="addcost" data-name="">+ koszt</button>
-        ${COST_PRESETS.map(p => `<button type="button" class="chip" data-act="addcost" data-name="${p}">${p}</button>`).join("")}
-      </div>
-
-      <div class="calc" data-out="calc">${calcHtml(r)}</div>
-
-      <div class="c-actions">
-        <button type="button" class="dup" data-act="dup">Kopiuj jako nowego</button>
-        <button type="button" class="del${pendingDelete === c.id ? " confirm" : ""}" data-act="del">${pendingDelete === c.id ? "Na pewno usunąć? Kliknij jeszcze raz" : "Usuń klienta"}</button>
-      </div>
-    </div>
-  </article>`;
-}
-function subLine(c, r){
-  const parts = [];
-  if (c.what) parts.push(c.what);
-  parts.push(fmt(r.net) + " zł netto");
-  return parts.join(" · ");
-}
-function calcHtml(r){
-  const lab = r.useGross ? "Faktura brutto" : "Faktura netto";
-  let h = `<div class="r"><span>${lab}</span><span>${fmt(r.start)} zł</span></div>`;
-  if (r.minusCost) {
-    h += `<div class="r"><span>Koszty razem</span><span>− ${fmt(r.costs)} zł</span></div>`;
-    h += `<div class="r sum"><span>Podstawa prowizji</span><span>${fmt(r.base)} zł</span></div>`;
-  } else {
-    h += `<div class="r"><span>Koszty (nie odliczane)</span><span>${fmt(r.costs)} zł</span></div>`;
-  }
-  h += `<div class="r big"><span>Prowizja ${fmtIn(state.rate) || 0}%</span><span>${fmt(r.com)} zł</span></div>`;
-  if (r.base < 0) h += `<div class="warn">Koszty są wyższe niż kwota faktury, więc prowizja wynosi 0.</div>`;
-  return h;
-}
-function refreshClient(c, skipEl){
-  const el = document.querySelector(`.client[data-id="${c.id}"]`);
-  if (!el) return;
-  const r = calc(c);
-  el.querySelector('[data-out="com"]').textContent = fmt(r.com) + " zł";
-  el.querySelector('[data-out="sub"]').textContent = subLine(c, r);
-  const nameEl = el.querySelector('[data-out="name"]');
-  nameEl.innerHTML = (esc(c.name) || "Nowy klient") + (c.example ? '<span class="badge">przykład</span>' : "");
-  el.querySelector('[data-out="calc"]').innerHTML = calcHtml(r);
-  const {net, gross} = amounts(c);
-  const nIn = el.querySelector('[data-f="net"]'), gIn = el.querySelector('[data-f="gross"]');
-  if (nIn !== skipEl && c.amountType === "brutto") nIn.value = fmtIn(net);
-  if (gIn !== skipEl && c.amountType === "netto") gIn.value = fmtIn(gross);
-  updateTotals();
-}
-function updateTotals(){
+    </button>`;
+  }).join("") : `<div class="empty"><b>Nie masz jeszcze klientów</b>Naciśnij „+ Dodaj klienta” na dole.</div>`;
   let com = 0, net = 0, cost = 0;
-  state.clients.forEach(c => { const r = calc(c); com += r.com; net += r.net; cost += r.costs; });
+  shown.forEach(c => { const r = calc(c); com += r.com; net += r.net; cost += r.costs; });
   document.getElementById("sumCom").textContent = fmt(round2(com)) + " zł";
-  document.getElementById("sumNet").textContent = fmt(round2(net));
-  document.getElementById("sumCost").textContent = fmt(round2(cost));
-  document.getElementById("sumCount").textContent = state.clients.length;
-  document.getElementById("setHint").textContent = (fmtIn(state.rate) || 0) + "% " + BASE_LABEL[state.base];
+  document.getElementById("sumNet").textContent = fmt0(net) + " zł";
+  document.getElementById("sumCost").textContent = fmt0(cost) + " zł";
+  document.getElementById("sumCount").textContent = shown.length;
+}
+
+/* ---------- ekran edycji ---------- */
+const cur = () => state.clients.find(c => c.id === editId);
+
+function openEditor(id, focusName){
+  editId = id; sureDelete = false;
+  document.getElementById("sheet").hidden = false;
+  document.body.classList.add("locked");
+  renderForm();
+  document.getElementById("sheet").scrollTop = 0;
+  if (focusName) setTimeout(() => document.querySelector('#form [data-f="name"]')?.focus(), 60);
+}
+function closeEditor(){
+  const c = cur();
+  if (c && isBlank(c)) state.clients = state.clients.filter(x => x !== c);
+  editId = null;
+  document.getElementById("sheet").hidden = true;
+  document.body.classList.remove("locked");
+  renderMain(); save();
+}
+
+function renderForm(){
+  const c = cur(); if (!c) return;
+  const isB = c.amountType === "brutto";
+  document.getElementById("form").innerHTML = `
+    <div class="step">
+      <h3><i>1</i>Klient</h3>
+      <label class="f">Nazwa klienta<input data-f="name" value="${esc(c.name)}" placeholder="np. Nowak Budownictwo" autocomplete="off" enterkeyhint="next"></label>
+      <label class="f">Za co jest faktura<input data-f="what" value="${esc(c.what)}" placeholder="np. montaż okien, 6 szt." autocomplete="off" enterkeyhint="next"></label>
+      <label class="f">Data faktury<input data-f="date" type="date" value="${esc(c.date)}"></label>
+    </div>
+
+    <div class="step">
+      <h3><i>2</i>Kwota z faktury</h3>
+      <div class="seg" role="group" aria-label="Rodzaj kwoty">
+        <button type="button" data-act="type" data-v="netto" aria-pressed="${!isB}">Netto</button>
+        <button type="button" data-act="type" data-v="brutto" aria-pressed="${isB}">Brutto</button>
+      </div>
+      <label class="f">Kwota ${isB ? "brutto" : "netto"}
+        <div class="money-wrap big"><input data-f="amount" inputmode="decimal" value="${fmtIn(c.amount)}" placeholder="0,00" autocomplete="off"></div>
+      </label>
+      <div class="vats"><span class="k">VAT</span>${[23,8,5,0].map(v => `<button type="button" class="pill" data-act="vat" data-v="${v}" aria-pressed="${v === c.vat}">${v}%</button>`).join("")}</div>
+      <div class="other" data-out="other"></div>
+    </div>
+
+    <div class="step">
+      <h3><i>3</i>Koszty</h3>
+      <div style="display:grid;gap:8px">
+        ${c.costs.map(k => `<div class="cost" data-cost="${k.id}">
+          <input data-cf="name" value="${esc(k.name)}" placeholder="Nazwa" aria-label="Nazwa kosztu" autocomplete="off">
+          <div class="money-wrap"><input data-cf="value" inputmode="decimal" value="${fmtIn(k.value)}" placeholder="0,00" aria-label="Kwota kosztu ${esc(k.name)}" autocomplete="off"></div>
+          <button type="button" class="x" data-act="delcost" aria-label="Usuń koszt">×</button>
+        </div>`).join("") || `<p class="note">Brak kosztów.</p>`}
+      </div>
+      <button type="button" class="addc" data-act="addcost" data-name="">+ Dodaj koszt</button>
+      <div class="quick">${COST_PRESETS.filter(p => !c.costs.some(k => k.name === p)).map(p => `<button type="button" class="pill" data-act="addcost" data-name="${p}">+ ${p}</button>`).join("")}</div>
+      <div class="costsum"><span>Koszty razem</span><span data-out="costsum"></span></div>
+    </div>
+
+    <div class="result" data-out="result"></div>
+
+    <div class="acts">
+      <button type="button" class="lnk" data-act="dup">Skopiuj jako nowego klienta</button>
+      <button type="button" class="lnk danger${sureDelete ? " sure" : ""}" data-act="del">${sureDelete ? "Na pewno? Dotknij jeszcze raz" : "Usuń klienta"}</button>
+    </div>`;
+  refreshForm();
+}
+function refreshForm(){
+  const c = cur(); if (!c) return;
+  const r = calc(c);
+  document.getElementById("sheetTitle").textContent = c.name.trim() || "Nowy klient";
+  const vatAmt = round2(r.gross - r.net);
+  document.querySelector('[data-out="other"]').innerHTML = c.amountType === "brutto"
+    ? `<span>Netto: <b>${fmt(r.net)} zł</b></span><span>VAT: ${fmt(vatAmt)} zł</span>`
+    : `<span>Brutto: <b>${fmt(r.gross)} zł</b></span><span>VAT: ${fmt(vatAmt)} zł</span>`;
+  document.querySelector('[data-out="costsum"]').textContent = fmt(r.costs) + " zł";
+  const rate = fmtIn(state.rate) || "0";
+  let h = `<div class="r"><span>Faktura ${r.useGross ? "brutto" : "netto"}</span><span>${fmt(r.start)} zł</span></div>`;
+  if (r.minusCost) {
+    h += `<div class="r"><span>minus koszty</span><span>− ${fmt(r.costs)} zł</span></div>`;
+    h += `<div class="r base"><span>Zostaje</span><span>${fmt(r.base)} zł</span></div>`;
+  }
+  h += `<div class="r com"><span>Prowizja ${rate}%</span><span>${fmt(r.com)} zł</span></div>`;
+  if (r.base < 0) h += `<div class="warn">Koszty są wyższe niż faktura, więc prowizja wynosi 0 zł.</div>`;
+  document.querySelector('[data-out="result"]').innerHTML = h;
+  document.getElementById("footCom").textContent = fmt(r.com) + " zł";
 }
 
 /* ---------- zdarzenia ---------- */
-const findClient = el => { const a = el.closest(".client"); return a && state.clients.find(c => c.id === a.dataset.id); };
-
-document.getElementById("list").addEventListener("input", e => {
-  const t = e.target, c = findClient(t);
-  if (!c) return;
-  const f = t.dataset.f, cf = t.dataset.cf;
-  if (f === "name" || f === "what" || f === "date") c[f] = t.value;
-  else if (f === "net") { c.amount = parseNum(t.value); c.amountType = "netto"; }
-  else if (f === "gross") { c.amount = parseNum(t.value); c.amountType = "brutto"; }
-  else if (f === "vat") c.vat = Number(t.value);
-  else if (cf) {
-    const k = c.costs.find(x => x.id === t.closest(".cost").dataset.cost);
-    if (!k) return;
-    if (cf === "name") k.name = t.value; else k.value = parseNum(t.value);
-  } else return;
-  if (c.example) c.example = false;
-  refreshClient(c, t);
-  changed();
-});
-document.getElementById("list").addEventListener("change", e => {
-  if (e.target.dataset.f === "vat") { const c = findClient(e.target); c.vat = Number(e.target.value); refreshClient(c); changed(); }
-});
 document.getElementById("list").addEventListener("click", e => {
-  const b = e.target.closest("[data-act]");
-  if (!b) return;
-  const c = findClient(b), act = b.dataset.act;
-  if (act !== "del") pendingDelete = null;
-  if (act === "toggle") { openId = openId === c.id ? null : c.id; render(); return; }
-  if (act === "addcost") {
-    const k = {id: uid(), name: b.dataset.name, value: 0};
-    c.costs.push(k); render(); changed();
-    const el = document.querySelector(`.cost[data-cost="${k.id}"] input[data-cf="${b.dataset.name ? "value" : "name"}"]`);
-    el && el.focus();
-    return;
-  }
-  if (act === "delcost") { c.costs = c.costs.filter(k => k.id !== b.closest(".cost").dataset.cost); render(); changed(); return; }
-  if (act === "dup") {
-    const n = JSON.parse(JSON.stringify(c)); n.id = uid(); n.example = false; n.name = c.name ? c.name + " (kopia)" : "";
-    n.costs.forEach(k => k.id = uid());
-    state.clients.splice(state.clients.indexOf(c) + 1, 0, n); openId = n.id; render(); changed(); return;
-  }
-  if (act === "del") {
-    if (pendingDelete === c.id) { state.clients = state.clients.filter(x => x !== c); pendingDelete = null; render(); changed(); }
-    else { pendingDelete = c.id; render(); }
-  }
+  const b = e.target.closest("[data-open]"); if (b) openEditor(b.dataset.open);
 });
 document.getElementById("addBtn").addEventListener("click", () => {
-  const c = newClient();
-  state.clients.unshift(c); openId = c.id; pendingDelete = null; render(); changed();
-  window.scrollTo({top: 0, behavior: "smooth"});
-  setTimeout(() => { const el = document.querySelector(`.client[data-id="${c.id}"] input[data-f="name"]`); el && el.focus({preventScroll:true}); }, 50);
+  const c = newClient(); state.clients.unshift(c); openEditor(c.id, true);
 });
-document.getElementById("rate").addEventListener("input", e => { state.rate = parseNum(e.target.value); state.clients.forEach(c => refreshClient(c)); updateTotals(); changed(); });
-document.getElementById("base").addEventListener("change", e => { state.base = e.target.value; state.clients.forEach(c => refreshClient(c)); updateTotals(); changed(); });
+document.getElementById("ruleBtn").addEventListener("click", e => {
+  const p = document.getElementById("setPanel"); p.hidden = !p.hidden;
+  e.currentTarget.setAttribute("aria-expanded", String(!p.hidden));
+  document.getElementById("ruleCh").textContent = p.hidden ? "Zmień" : "Zwiń";
+});
+document.getElementById("rate").addEventListener("input", e => { state.rate = parseNum(e.target.value); const v = e.target.value; renderMain(); e.target.value = v; changed(); });
+document.getElementById("base").addEventListener("change", e => { state.base = e.target.value; renderMain(); changed(); });
 document.getElementById("vatDefault").addEventListener("change", e => { state.vat = Number(e.target.value); changed(); });
 
-/* ---------- start ---------- */
+const sheet = document.getElementById("sheet");
+sheet.addEventListener("input", e => {
+  const t = e.target, c = cur(); if (!c) return;
+  const f = t.dataset.f, cf = t.dataset.cf;
+  if (f === "name" || f === "what" || f === "date") c[f] = t.value;
+  else if (f === "amount") c.amount = parseNum(t.value);
+  else if (cf) {
+    const k = c.costs.find(x => x.id === t.closest(".cost").dataset.cost); if (!k) return;
+    if (cf === "name") k.name = t.value; else k.value = parseNum(t.value);
+  } else return;
+  refreshForm(); changed();
+});
+sheet.addEventListener("keydown", e => {
+  if (e.key !== "Enter" || e.target.tagName !== "INPUT") return;
+  const all = [...sheet.querySelectorAll("#form input")];
+  const i = all.indexOf(e.target);
+  if (i > -1 && all[i + 1]) { e.preventDefault(); all[i + 1].focus(); }
+});
+sheet.addEventListener("click", e => {
+  const b = e.target.closest("[data-act]"); if (!b) return;
+  const act = b.dataset.act, c = cur();
+  if (act !== "del") sureDelete = false;
+  if (act === "close") return closeEditor();
+  if (!c) return;
+  if (act === "type") {
+    const a = amounts(c);
+    c.amountType = b.dataset.v; c.amount = b.dataset.v === "brutto" ? a.gross : a.net;
+    renderForm(); changed(); return;
+  }
+  if (act === "vat") {
+    c.vat = Number(b.dataset.v); renderForm(); changed(); return;
+  }
+  if (act === "addcost") {
+    const k = {id: uid(), name: b.dataset.name, value: 0};
+    c.costs.push(k); renderForm(); changed();
+    sheet.querySelector(`.cost[data-cost="${k.id}"] input[data-cf="${k.name ? "value" : "name"}"]`)?.focus();
+    return;
+  }
+  if (act === "delcost") { c.costs = c.costs.filter(k => k.id !== b.closest(".cost").dataset.cost); renderForm(); changed(); return; }
+  if (act === "dup") {
+    const n = JSON.parse(JSON.stringify(c)); n.id = uid(); n.name = c.name ? c.name + " (kopia)" : ""; n.date = today();
+    n.costs.forEach(k => k.id = uid());
+    state.clients.unshift(n); changed(); openEditor(n.id, true); return;
+  }
+  if (act === "del") {
+    if (sureDelete) { state.clients = state.clients.filter(x => x !== c); editId = null; sureDelete = false; changed(); closeEditor(); }
+    else { sureDelete = true; renderForm(); }
+  }
+});
+
+/* ---------- start: od razu pusty formularz, jeśli nie ma klientów ---------- */
 (function init(){
   let s = null;
   try { const raw = localStorage.getItem(LS_KEY); if (raw) s = JSON.parse(raw); } catch(e){}
-  state = s ? normalize(s) : sampleState();
-  openId = state.clients[0]?.id || null;
-  render();
+  state = normalize(s);
+  state.clients = state.clients.filter(c => !isBlank(c));
+  renderMain();
+  if (!state.clients.length) { const c = newClient(); state.clients.unshift(c); openEditor(c.id, true); }
+  connectDb();
 })();
 </script>
 
