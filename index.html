@@ -110,6 +110,7 @@ input::placeholder{color:var(--muted);opacity:.7}
 @media (max-width:380px){.two{grid-template-columns:1fr}}
 
 .cost{display:grid;grid-template-columns:1fr 130px 44px;gap:8px;align-items:center}
+@media (max-width:480px){.cost{grid-template-columns:1fr 44px;gap:6px 8px;padding-bottom:10px;border-bottom:1px solid var(--line)}.cost [data-cf="name"]{grid-column:1/-1;font-weight:600}}
 .x{width:44px;height:48px;border-radius:10px;border:1px solid var(--line);background:var(--field);color:var(--muted);font-size:22px;line-height:1}
 .x:hover{color:var(--danger);border-color:var(--danger)}
 .addc{border:1px dashed var(--accent);background:none;color:var(--accent);border-radius:10px;padding:11px;font-weight:700}
@@ -200,7 +201,7 @@ input::placeholder{color:var(--muted);opacity:.7}
 
 <script>
 const LS_KEY = "kalk-prowizji-v1";
-const COST_PRESETS = ["Materiały","Robocizna","Transport","Podwykonawca","Sprzęt"];
+const COST_PRESETS = ["Godziny pracowników","Materiały","Transport","Podwykonawca","Sprzęt"];
 const BASE_TXT = {"net-cost":"od netto minus koszty","net":"od całego netto","gross-cost":"od brutto minus koszty","gross":"od całego brutto"};
 
 let state = null;
@@ -239,7 +240,7 @@ const today = () => new Date().toISOString().slice(0,10);
 const fmtDate = d => { if (!d) return ""; const [y,m,dd] = d.split("-"); return `${dd}.${m}.${y}`; };
 
 function newClient(){
-  return {id: uid(), name: "", what: "", date: today(), amount: 0, amountType: "netto", vat: state.vat, costs: [{id: uid(), name: "Materiały", value: 0}, {id: uid(), name: "Robocizna", value: 0}]};
+  return {id: uid(), name: "", what: "", date: today(), amount: 0, amountType: "netto", vat: state.vat, costs: [{id: uid(), name: "Godziny pracowników", value: 0}, {id: uid(), name: "Materiały", value: 0}]};
 }
 const isBlank = c => !c.name.trim() && !c.what.trim() && !c.amount && c.costs.every(k => !k.value);
 
