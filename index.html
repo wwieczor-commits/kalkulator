@@ -208,9 +208,29 @@ let sureDelete = false;
 const uid = () => Math.random().toString(36).slice(2, 10);
 const round2 = n => Math.round((n + Number.EPSILON) * 100) / 100;
 const parseNum = s => { const v = parseFloat(String(s ?? "").replace(/[\s ]/g, "").replace(",", ".")); return isFinite(v) ? v : 0; };
-const fmt = n => n.toLocaleString("pl-PL", {minimumFractionDigits:2, maximumFractionDigits:2});
-const fmt0 = n => n.toLocaleString("pl-PL", {maximumFractionDigits:0});
-const fmtIn = n => n ? String(round2(n)).replace(".", ",") : "";
+const group = d => d.replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+const fmt = n => { const [i, d] = Math.abs(round2(n)).toFixed(2).split("."); return (n < 0 ? "−" : "") + group(i) + "," + d; };
+const fmt0 = n => (n < 0 ? "−" : "") + group(String(Math.round(Math.abs(n))));
+const fmtIn = n => n ? fmt(n) : "";
+const fmtRate = n => n ? String(round2(n)).replace(".", ",") : "";
+
+/* formatowanie kwoty w trakcie pisania: 3000000,5 -> 3 000 000,5, kursor zostaje na swoim miejscu */
+function liveMoney(el){
+  const v = el.value, pos = el.selectionStart ?? v.length;
+  const sig = ch => /[\d.,]/.test(ch);
+  const before = [...v.slice(0, pos)].filter(sig).length;
+  let t = v.replace(/\./g, ",").replace(/[^\d,]/g, "");
+  const k = t.indexOf(",");
+  let int = k < 0 ? t : t.slice(0, k), dec = k < 0 ? null : t.slice(k + 1).replace(/,/g, "").slice(0, 2);
+  int = int.replace(/^0+(?=\d)/, "");
+  if (dec !== null && int === "") int = "0";
+  const out = group(int) + (dec !== null ? "," + dec : "");
+  if (out === v) return;
+  el.value = out;
+  let n = 0, c = 0;
+  while (c < out.length && n < before) { if (sig(out[c])) n++; c++; }
+  try { el.setSelectionRange(c, c); } catch(e){}
+}
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const today = () => new Date().toISOString().slice(0,10);
 const fmtDate = d => { if (!d) return ""; const [y,m,dd] = d.split("-"); return `${dd}.${m}.${y}`; };
@@ -280,10 +300,10 @@ async function connectDb(){
 
 /* ---------- ekran główny ---------- */
 function renderMain(){
-  document.getElementById("rate").value = fmtIn(state.rate);
+  document.getElementById("rate").value = fmtRate(state.rate);
   document.getElementById("vatDefault").value = String(state.vat);
   document.getElementById("base").value = state.base;
-  document.getElementById("ruleTxt").textContent = (fmtIn(state.rate) || "0") + "% " + BASE_TXT[state.base];
+  document.getElementById("ruleTxt").textContent = (fmtRate(state.rate) || "0") + "% " + BASE_TXT[state.base];
   const shown = state.clients.filter(c => !isBlank(c));
   const list = document.getElementById("list");
   list.innerHTML = shown.length ? shown.map(c => {
@@ -344,7 +364,7 @@ function renderForm(){
         <button type="button" data-act="type" data-v="brutto" aria-pressed="${isB}">Brutto</button>
       </div>
       <label class="f">Kwota ${isB ? "brutto" : "netto"}
-        <div class="money-wrap big"><input data-f="amount" inputmode="decimal" value="${fmtIn(c.amount)}" placeholder="0,00" autocomplete="off"></div>
+        <div class="money-wrap big"><input data-f="amount" data-money inputmode="decimal" value="${fmtIn(c.amount)}" placeholder="0,00" autocomplete="off"></div>
       </label>
       <div class="vats"><span class="k">VAT</span>${[23,8,5,0].map(v => `<button type="button" class="pill" data-act="vat" data-v="${v}" aria-pressed="${v === c.vat}">${v}%</button>`).join("")}</div>
       <div class="other" data-out="other"></div>
@@ -355,7 +375,7 @@ function renderForm(){
       <div style="display:grid;gap:8px">
         ${c.costs.map(k => `<div class="cost" data-cost="${k.id}">
           <input data-cf="name" value="${esc(k.name)}" placeholder="Nazwa" aria-label="Nazwa kosztu" autocomplete="off">
-          <div class="money-wrap"><input data-cf="value" inputmode="decimal" value="${fmtIn(k.value)}" placeholder="0,00" aria-label="Kwota kosztu ${esc(k.name)}" autocomplete="off"></div>
+          <div class="money-wrap"><input data-cf="value" data-money inputmode="decimal" value="${fmtIn(k.value)}" placeholder="0,00" aria-label="Kwota kosztu ${esc(k.name)}" autocomplete="off"></div>
           <button type="button" class="x" data-act="delcost" aria-label="Usuń koszt">×</button>
         </div>`).join("") || `<p class="note">Brak kosztów.</p>`}
       </div>
@@ -381,7 +401,7 @@ function refreshForm(){
     ? `<span>Netto: <b>${fmt(r.net)} zł</b></span><span>VAT: ${fmt(vatAmt)} zł</span>`
     : `<span>Brutto: <b>${fmt(r.gross)} zł</b></span><span>VAT: ${fmt(vatAmt)} zł</span>`;
   document.querySelector('[data-out="costsum"]').textContent = fmt(r.costs) + " zł";
-  const rate = fmtIn(state.rate) || "0";
+  const rate = fmtRate(state.rate) || "0";
   let h = `<div class="r"><span>Faktura ${r.useGross ? "brutto" : "netto"}</span><span>${fmt(r.start)} zł</span></div>`;
   if (r.minusCost) {
     h += `<div class="r"><span>minus koszty</span><span>− ${fmt(r.costs)} zł</span></div>`;
@@ -412,6 +432,7 @@ document.getElementById("vatDefault").addEventListener("change", e => { state.va
 const sheet = document.getElementById("sheet");
 sheet.addEventListener("input", e => {
   const t = e.target, c = cur(); if (!c) return;
+  if (t.hasAttribute("data-money")) liveMoney(t);
   const f = t.dataset.f, cf = t.dataset.cf;
   if (f === "name" || f === "what" || f === "date") c[f] = t.value;
   else if (f === "amount") c.amount = parseNum(t.value);
@@ -420,6 +441,10 @@ sheet.addEventListener("input", e => {
     if (cf === "name") k.name = t.value; else k.value = parseNum(t.value);
   } else return;
   refreshForm(); changed();
+});
+sheet.addEventListener("focusout", e => {
+  const t = e.target;
+  if (t.hasAttribute && t.hasAttribute("data-money") && t.value.trim()) t.value = fmtIn(parseNum(t.value));
 });
 sheet.addEventListener("keydown", e => {
   if (e.key !== "Enter" || e.target.tagName !== "INPUT") return;
