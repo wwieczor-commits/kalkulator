@@ -68,6 +68,8 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
 .card .nums .com{background:var(--accent-soft);border-radius:9px;padding:6px 9px;margin:-6px 0}
 .card .nums .com .v{color:var(--accent);font-weight:800;font-size:17px}
 .card .nums .com .k{color:var(--accent)}
+.clear{background:none;border:1px solid var(--line);color:var(--danger);border-radius:12px;padding:13px;font-weight:600;margin-top:14px}
+.clear.sure{background:var(--danger-soft);border-color:var(--danger);font-weight:700}
 .empty{text-align:center;padding:32px 18px;color:var(--muted);background:var(--card);border:1px dashed var(--line);border-radius:14px}
 .empty b{display:block;color:var(--ink);font-size:17px;margin-bottom:4px}
 
@@ -204,6 +206,7 @@ const BASE_TXT = {"net-cost":"od netto minus koszty","net":"od całego netto","g
 let state = null;
 let editId = null;
 let sureDelete = false;
+let sureClear = false, sureClearTimer = null;
 
 const uid = () => Math.random().toString(36).slice(2, 10);
 const round2 = n => Math.round((n + Number.EPSILON) * 100) / 100;
@@ -317,7 +320,7 @@ function renderMain(){
         <div class="com"><div class="k">Prowizja</div><div class="v">${fmt(r.com)} zł</div></div>
       </div>
     </button>`;
-  }).join("") : `<div class="empty"><b>Nie masz jeszcze klientów</b>Naciśnij „+ Dodaj klienta” na dole.</div>`;
+  }).join("") + `<button type="button" class="clear${sureClear ? " sure" : ""}" data-act="clearall">${sureClear ? "Na pewno usunąć wszystkich klientów? Dotknij jeszcze raz" : "Wyczyść cały kalkulator"}</button>` : `<div class="empty"><b>Nie masz jeszcze klientów</b>Naciśnij „+ Dodaj klienta” na dole.</div>`;
   let com = 0, net = 0, cost = 0;
   shown.forEach(c => { const r = calc(c); com += r.com; net += r.net; cost += r.costs; });
   document.getElementById("sumCom").textContent = fmt(round2(com)) + " zł";
@@ -415,6 +418,13 @@ function refreshForm(){
 
 /* ---------- zdarzenia ---------- */
 document.getElementById("list").addEventListener("click", e => {
+  if (e.target.closest('[data-act="clearall"]')) {
+    clearTimeout(sureClearTimer);
+    if (!sureClear) { sureClear = true; renderMain(); sureClearTimer = setTimeout(() => { sureClear = false; renderMain(); }, 5000); return; }
+    sureClear = false; state.clients = []; changed(); renderMain();
+    const c = newClient(); state.clients.unshift(c); openEditor(c.id, true);
+    return;
+  }
   const b = e.target.closest("[data-open]"); if (b) openEditor(b.dataset.open);
 });
 document.getElementById("addBtn").addEventListener("click", () => {
