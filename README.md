@@ -16,3 +16,7 @@ Dane zapisują się w pamięci przeglądarki (localStorage) na danym urządzeniu
 
 To jeden plik `index.html` bez zależności. Wystarczy go otworzyć w przeglądarce
 albo włączyć GitHub Pages (Settings → Pages → branch `main`, folder `/`).
+
+---
+
+© 2026 Wojciech Wieczorek. Wszelkie prawa zastrzeżone.
