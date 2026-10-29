@@ -200,7 +200,7 @@ input::placeholder{color:var(--muted);opacity:.7}
 
     <div class="h2"><h2>Klienci</h2><span>dotknij, żeby edytować</span></div>
     <div class="list" id="list"></div>
-    <p class="copy">© 2026 Wojciech Wieczorek. Wszelkie prawa zastrzeżone.</p>
+    <p class="copy">© 2026 Wojciech Wieczorek</p>
   </div>
 </main>
 
@@ -579,7 +579,7 @@ async function savePdf(doc, filename){
   const n = doc.getNumberOfPages();
   for (let i = 1; i <= n; i++) {
     doc.setPage(i); doc.setFont("K", "normal"); doc.setFontSize(8.5); doc.setTextColor(...MUTED);
-    doc.text("© 2026 Wojciech Wieczorek. Wszelkie prawa zastrzeżone.", PL, 290);
+    doc.text("© 2026 Wojciech Wieczorek", PL, 290);
     if (n > 1) doc.text(`Strona ${i} z ${n}`, PR, 290, {align: "right"});
   }
   const inClaude = !!window.claude?.use;

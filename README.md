@@ -19,4 +19,4 @@ albo włączyć GitHub Pages (Settings → Pages → branch `main`, folder `/`).
 
 ---
 
-© 2026 Wojciech Wieczorek. Wszelkie prawa zastrzeżone.
+© 2026 Wojciech Wieczorek
