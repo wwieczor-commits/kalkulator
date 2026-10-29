@@ -116,6 +116,13 @@ input::placeholder{color:var(--muted);opacity:.7}
 .addc{border:1px dashed var(--accent);background:none;color:var(--accent);border-radius:10px;padding:11px;font-weight:700}
 .quick{display:flex;gap:6px;flex-wrap:wrap}
 .quick .pill{font-weight:500}
+.cost.hours{grid-template-columns:1fr 44px;gap:8px;padding-bottom:12px;border-bottom:1px solid var(--line)}
+.cost.hours [data-cf="name"]{grid-column:1;font-weight:600}
+.hrs{grid-column:1/-1;display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1.4fr);gap:8px;align-items:end}
+.mini{display:grid;gap:4px;font-size:13px;color:var(--muted);font-weight:600;min-width:0}
+.mini input[data-cf="hours"]{text-align:right}
+.times{padding-bottom:13px;color:var(--muted);font-weight:700;font-size:18px}
+.hsum{grid-column:1/-1;display:flex;justify-content:space-between;font-weight:700;background:var(--accent-soft);border-radius:10px;padding:10px 12px}
 .costsum{display:flex;justify-content:space-between;font-weight:700;border-top:1px solid var(--line);padding-top:10px}
 
 .result{background:var(--accent);color:var(--accent-ink);border-radius:14px;padding:16px;display:grid;gap:6px}
@@ -239,8 +246,12 @@ const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;
 const today = () => new Date().toISOString().slice(0,10);
 const fmtDate = d => { if (!d) return ""; const [y,m,dd] = d.split("-"); return `${dd}.${m}.${y}`; };
 
+const HOURS_NAME = "Godziny pracowników";
+function newCost(name){
+  return name === HOURS_NAME ? {id: uid(), name, kind: "hours", hours: 0, rate: 0, value: 0} : {id: uid(), name, value: 0};
+}
 function newClient(){
-  return {id: uid(), name: "", what: "", date: today(), amount: 0, amountType: "netto", vat: state.vat, costs: [{id: uid(), name: "Godziny pracowników", value: 0}, {id: uid(), name: "Materiały", value: 0}]};
+  return {id: uid(), name: "", what: "", date: today(), amount: 0, amountType: "netto", vat: state.vat, costs: [newCost("Godziny pracowników"), newCost("Materiały")]};
 }
 const isBlank = c => !c.name.trim() && !c.what.trim() && !c.amount && c.costs.every(k => !k.value);
 
@@ -377,7 +388,16 @@ function renderForm(){
     <div class="step">
       <h3><i>3</i>Koszty</h3>
       <div style="display:grid;gap:8px">
-        ${c.costs.map(k => `<div class="cost" data-cost="${k.id}">
+        ${c.costs.map(k => k.kind === "hours" ? `<div class="cost hours" data-cost="${k.id}">
+          <input data-cf="name" value="${esc(k.name)}" placeholder="Nazwa" aria-label="Nazwa kosztu" autocomplete="off">
+          <button type="button" class="x" data-act="delcost" aria-label="Usuń koszt">×</button>
+          <div class="hrs">
+            <label class="mini">Liczba rbg<input data-cf="hours" data-num inputmode="decimal" value="${k.hours ? fmtRate(k.hours) : ""}" placeholder="0" autocomplete="off"></label>
+            <span class="times">×</span>
+            <label class="mini">Stawka za godzinę<div class="money-wrap"><input data-cf="rate" data-money inputmode="decimal" value="${fmtIn(k.rate)}" placeholder="0,00" autocomplete="off"></div></label>
+          </div>
+          <div class="hsum"><span>Razem</span><span data-out="hsum">${fmt(k.value || 0)} zł</span></div>
+        </div>` : `<div class="cost" data-cost="${k.id}">
           <input data-cf="name" value="${esc(k.name)}" placeholder="Nazwa" aria-label="Nazwa kosztu" autocomplete="off">
           <div class="money-wrap"><input data-cf="value" data-money inputmode="decimal" value="${fmtIn(k.value)}" placeholder="0,00" aria-label="Kwota kosztu ${esc(k.name)}" autocomplete="off"></div>
           <button type="button" class="x" data-act="delcost" aria-label="Usuń koszt">×</button>
@@ -443,13 +463,18 @@ document.getElementById("vatDefault").addEventListener("change", e => { state.va
 const sheet = document.getElementById("sheet");
 sheet.addEventListener("input", e => {
   const t = e.target, c = cur(); if (!c) return;
-  if (t.hasAttribute("data-money")) liveMoney(t);
+  if (t.hasAttribute("data-money") || t.hasAttribute("data-num")) liveMoney(t);
   const f = t.dataset.f, cf = t.dataset.cf;
   if (f === "name" || f === "what" || f === "date") c[f] = t.value;
   else if (f === "amount") c.amount = parseNum(t.value);
   else if (cf) {
     const k = c.costs.find(x => x.id === t.closest(".cost").dataset.cost); if (!k) return;
-    if (cf === "name") k.name = t.value; else k.value = parseNum(t.value);
+    if (cf === "name") k.name = t.value;
+    else if (cf === "hours" || cf === "rate") {
+      k[cf] = parseNum(t.value); k.value = round2((k.hours || 0) * (k.rate || 0));
+      t.closest(".cost").querySelector('[data-out="hsum"]').textContent = fmt(k.value) + " zł";
+    }
+    else k.value = parseNum(t.value);
   } else return;
   refreshForm(); changed();
 });
@@ -478,9 +503,9 @@ sheet.addEventListener("click", e => {
     c.vat = Number(b.dataset.v); renderForm(); changed(); return;
   }
   if (act === "addcost") {
-    const k = {id: uid(), name: b.dataset.name, value: 0};
+    const k = newCost(b.dataset.name);
     c.costs.push(k); renderForm(); changed();
-    sheet.querySelector(`.cost[data-cost="${k.id}"] input[data-cf="${k.name ? "value" : "name"}"]`)?.focus();
+    sheet.querySelector(`.cost[data-cost="${k.id}"] input[data-cf="${k.kind === "hours" ? "hours" : k.name ? "value" : "name"}"]`)?.focus();
     return;
   }
   if (act === "delcost") { c.costs = c.costs.filter(k => k.id !== b.closest(".cost").dataset.cost); renderForm(); changed(); return; }
