@@ -479,7 +479,7 @@ async function runPdf(fn){
   catch(e){ toast("Nie udało się przygotować PDF. Sprawdź internet i spróbuj ponownie."); }
 }
 const PL = 18, PR = 192, PBOT = 280;
-const INK = [21,35,28], MUTED = [93,107,98], ACC = [31,107,79], LINE = [205,214,207];
+const INK = [22,30,42], MUTED = [96,106,122], ACC = [28,78,148], LINE = [205,213,225];
 function newDoc(){
   const doc = new jspdf.jsPDF({unit: "mm", format: "a4"});
   doc.addFileToVFS("k-r.ttf", PDF_FONT_R); doc.addFont("k-r.ttf", "K", "normal");
@@ -492,12 +492,21 @@ function txt(w, s, x, o = {}){
   const d = w.doc;
   d.setFont("K", o.bold ? "bold" : "normal"); d.setFontSize(o.size || 11); d.setTextColor(...(o.color || INK));
   d.text(s, x, w.y, o.align ? {align: o.align} : undefined);
+  return d.getTextWidth(s);
+}
+/* subtelna kropkowana linia prowadząca wzrok od opisu do kwoty */
+function leader(w, x1, x2){
+  if (x2 - x1 < 8) return;
+  const d = w.doc;
+  d.setLineDashPattern([0.3, 1.2], 0); d.setDrawColor(170, 182, 200); d.setLineWidth(0.25);
+  d.line(x1 + 2.5, w.y - 0.7, x2 - 2.5, w.y - 0.7);
+  d.setLineDashPattern([], 0);
 }
 function row(w, left, right, o = {}){
   const size = o.size || 11;
   ensure(w, size * 0.45 + (o.sub ? 6 : 2));
-  txt(w, left, PL + (o.indent || 0), o);
-  if (right != null) txt(w, right, PR, {...o, align: "right"});
+  const lw = txt(w, left, PL + (o.indent || 0), o);
+  if (right != null) { const rw = txt(w, right, PR, {...o, align: "right"}); leader(w, PL + (o.indent || 0) + lw, PR - rw); }
   if (o.sub) { w.y += 4.3; txt(w, o.sub, PL + (o.indent || 0), {size: 9, color: MUTED}); }
   w.y += size * 0.42 + 2.4;
 }
@@ -557,9 +566,10 @@ async function pdfAll(){
   const rate = fmtRate(state.rate) || "0";
 
   // wyróżniona suma na górze
-  d.setFillColor(226, 239, 231); d.roundedRect(PL, w.y - 6, PR - PL, 15, 2, 2, "F");
-  txt(w, "Twoja prowizja łącznie", PL + 4, {bold: true, size: 14, color: ACC});
-  txt(w, fmt(tp) + " zł", PR - 4, {bold: true, size: 16, color: ACC, align: "right"});
+  d.setFillColor(225, 234, 248); d.roundedRect(PL, w.y - 6, PR - PL, 15, 2, 2, "F");
+  const tw1 = txt(w, "Twoja prowizja łącznie", PL + 4, {bold: true, size: 14, color: ACC});
+  const tw2 = txt(w, fmt(tp) + " zł", PR - 4, {bold: true, size: 16, color: ACC, align: "right"});
+  leader(w, PL + 4 + tw1, PR - 4 - tw2);
   w.y += 4.5;
   txt(w, `Faktury netto ${fmt(tn)} zł · koszty ${fmt(tc)} zł`, PL + 4, {size: 9, color: MUTED});
   w.y += 12;
@@ -580,10 +590,11 @@ async function pdfAll(){
     const h = 5 + 4.6 + (sub ? 4.5 : 0) + items.length * 4.5 + 4.5;
     if (w.y - 5 + h > PBOT) { d.addPage(); w.y = 20; head(); }
     // naprzemienne tło wierszy (zebra)
-    if (i % 2 === 0) { d.setFillColor(238, 244, 240); d.rect(PL - 3, w.y - 5, PR - PL + 6, h, "F"); }
+    if (i % 2 === 0) { d.setFillColor(237, 243, 251); d.rect(PL - 3, w.y - 5, PR - PL + 6, h, "F"); }
     d.setFontSize(11.5); d.setFont("K", "bold");
-    txt(w, d.splitTextToSize(c.name.trim() || "Bez nazwy", 80)[0], PL, {bold: true, size: 11.5});
-    txt(w, fmt(r.net), X.net, {size: 11, align: "right"});
+    const nw = txt(w, d.splitTextToSize(c.name.trim() || "Bez nazwy", 80)[0], PL, {bold: true, size: 11.5});
+    const vw = txt(w, fmt(r.net), X.net, {size: 11, align: "right"});
+    leader(w, PL + nw, X.net - vw);
     txt(w, fmt(r.costs), X.cost, {size: 11, align: "right"});
     txt(w, fmt(r.com) + " zł", PR, {bold: true, size: 11.5, color: ACC, align: "right"});
     w.y += 4.6;
@@ -591,8 +602,9 @@ async function pdfAll(){
     items.forEach(k => {
       const det = costDetail(k);
       d.setFontSize(9);
-      txt(w, d.splitTextToSize((k.name.trim() || "Koszt") + (det ? "  ·  " + det : ""), 110)[0], PL + 4, {size: 9, color: MUTED});
-      txt(w, fmt(k.value || 0), X.cost, {size: 9, color: MUTED, align: "right"});
+      const kw = txt(w, d.splitTextToSize((k.name.trim() || "Koszt") + (det ? "  ·  " + det : ""), 110)[0], PL + 4, {size: 9, color: MUTED});
+      const kv = txt(w, fmt(k.value || 0), X.cost, {size: 9, color: MUTED, align: "right"});
+      leader(w, PL + 4 + kw, X.cost - kv);
       w.y += 4.5;
     });
     const calcTxt = r.minusCost
@@ -603,8 +615,9 @@ async function pdfAll(){
   });
   if (w.y + 12 > PBOT) { d.addPage(); w.y = 20; }
   w.y -= 2; hr(w); w.y += 2;
-  txt(w, "Razem", PL, {bold: true, size: 12});
-  txt(w, fmt(tn), X.net, {bold: true, size: 12, align: "right"});
+  const rw1 = txt(w, "Razem", PL, {bold: true, size: 12});
+  const rw2 = txt(w, fmt(tn), X.net, {bold: true, size: 12, align: "right"});
+  leader(w, PL + rw1, X.net - rw2);
   txt(w, fmt(tc), X.cost, {bold: true, size: 12, align: "right"});
   txt(w, fmt(tp) + " zł", PR, {bold: true, size: 12, color: ACC, align: "right"});
   await savePdf(w.doc, `Zestawienie prowizji - ${fmtDate(today())}.pdf`);
