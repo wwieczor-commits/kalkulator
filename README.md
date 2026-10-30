@@ -3,7 +3,7 @@
 Prosta aplikacja w przeglądarce (działa na telefonie) do liczenia prowizji od faktur klientów.
 
 - przy pierwszym uruchomieniu od razu otwiera się pusty formularz,
-- dla każdego klienta: nazwa, za co, data, kwota netto albo brutto (przełącznik, VAT 23/8/5/0%),
+- dla każdego klienta: nazwa, za co (opcjonalnie), nr faktury (opcjonalnie), data, kwota netto albo brutto (przełącznik, VAT 23/8/5/0%),
 - lista kosztów stałych (domyślnie godziny pracowników z przelicznikiem rbg × stawka oraz materiały; można dodawać kolejne),
 - prowizja domyślnie 20% od kwoty netto minus koszty; stawkę, podstawę i osobę ustawiasz na samej górze ekranu głównego,
 - pole „Kogo dotyczy prowizja” (imię i nazwisko widoczne w nagłówku PDF),
