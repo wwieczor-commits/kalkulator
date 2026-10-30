@@ -101,7 +101,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
 .bar .inner{display:flex;align-items:center;gap:8px;padding-block:10px}
 .back{background:none;border:0;color:var(--accent);font-weight:700;padding:8px 4px;font-size:16px}
 .bar .t{flex:1;text-align:center;font-weight:700;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.bar .sp{width:70px}
+.bar .sp{width:80px}
 .form{display:grid;gap:16px;padding-block:16px 150px}
 .step{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 14px;display:grid;gap:12px}
 .step h3{margin:0;font-size:16px;display:flex;align-items:center;gap:9px}
@@ -169,7 +169,7 @@ input::placeholder{color:var(--muted);opacity:.7}
 <!-- ekran główny -->
 <section class="gut cfg-wrap" aria-label="Ustawienia prowizji">
   <div class="inner cfg">
-    <label class="f">Kogo dotyczy prowizja
+    <label class="f">Handlowiec (kogo dotyczy prowizja)
       <input id="person" placeholder="imię i nazwisko, np. Jan Kowalski" autocomplete="name" enterkeyhint="done">
     </label>
     <div class="cfg-row">
@@ -218,7 +218,7 @@ input::placeholder{color:var(--muted);opacity:.7}
 <!-- ekran edycji -->
 <section class="sheet" id="sheet" hidden aria-label="Edycja klienta">
   <div class="bar gut"><div class="inner">
-    <button type="button" class="back" data-act="close">‹ Lista</button>
+    <button type="button" class="back" data-act="close">‹ Powrót</button>
     <div class="t" id="sheetTitle">Nowy klient</div>
     <div class="sp"></div>
   </div></div>
@@ -362,7 +362,7 @@ function renderMain(){
       ${items.length ? `<div class="cb"><div class="cb-t">Na koszty składają się</div>${items.map(k => `<div class="cb-r"><span>${esc(k.name) || "Koszt"}${costDetail(k) ? `<small>${costDetail(k)}</small>` : ""}</span><span>${fmt(k.value || 0)} zł</span></div>`).join("")}</div>` : ""}
     </button>
     <div class="card-foot"><button type="button" data-pdf="${c.id}">Pobierz PDF</button></div></article>`;
-  }).join("") + `<button type="button" class="btn ghost pdfall" data-act="pdfall">Pobierz zestawienie wszystkich (PDF)</button><button type="button" class="clear${sureClear ? " sure" : ""}" data-act="clearall">${sureClear ? "Na pewno usunąć wszystkich klientów? Dotknij jeszcze raz" : "Wyczyść cały kalkulator"}</button>` : `<div class="empty"><b>Nie masz jeszcze klientów</b>Naciśnij „+ Dodaj klienta” na dole.</div>`;
+  }).join("") + `<button type="button" class="btn ghost pdfall" data-act="pdfall">Pobierz zestawienie wszystkich (PDF)</button><button type="button" class="clear${sureClear ? " sure" : ""}" data-act="clearall">${sureClear ? "Na pewno usunąć wszystkich klientów? Dotknij jeszcze raz" : "Wyczyść cały kalkulator"}</button>` : `<div class="empty"><b>Nie masz jeszcze klientów</b>Wpisz na górze handlowca i stawkę, potem naciśnij „+ Dodaj klienta” na dole.</div>`;
   let com = 0, net = 0, cost = 0;
   shown.forEach(c => { const r = calc(c); com += r.com; net += r.net; cost += r.costs; });
   document.getElementById("sumCom").textContent = fmt(round2(com)) + " zł";
@@ -677,7 +677,7 @@ document.getElementById("list").addEventListener("click", e => {
     clearTimeout(sureClearTimer);
     if (!sureClear) { sureClear = true; renderMain(); sureClearTimer = setTimeout(() => { sureClear = false; renderMain(); }, 5000); return; }
     sureClear = false; state.clients = []; changed(); renderMain();
-    const c = newClient(); state.clients.unshift(c); openEditor(c.id, true);
+    window.scrollTo({top: 0});
     return;
   }
   if (e.target.closest('[data-act="pdfall"]')) return runPdf(pdfAll);
@@ -759,14 +759,14 @@ sheet.addEventListener("click", e => {
   }
 });
 
-/* ---------- start: od razu pusty formularz, jeśli nie ma klientów ---------- */
+/* ---------- start: ekran główny, kursor w polu handlowca, jeśli jest puste ---------- */
 (function init(){
   let s = null;
   try { const raw = localStorage.getItem(LS_KEY); if (raw) s = JSON.parse(raw); } catch(e){}
   state = normalize(s);
   state.clients = state.clients.filter(c => !isBlank(c));
   renderMain();
-  if (!state.clients.length) { const c = newClient(); state.clients.unshift(c); openEditor(c.id, true); }
+  if (!(state.person || "").trim()) document.getElementById("person").focus();
   connectDb();
 })();
 </script>
