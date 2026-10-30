@@ -78,7 +78,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
 .card .row1{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
 .card .name{font-weight:700;font-size:17px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .card .date{color:var(--muted);font-size:13px;flex-shrink:0}
-.card .what{color:var(--muted);font-size:14px;margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.card .what{color:var(--muted);font-size:14px;margin-top:2px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow-wrap:anywhere}
 .card .nums{display:grid;grid-template-columns:1fr 1fr 1.15fr;gap:8px;margin-top:12px}
 .card .nums div{min-width:0}
 .card .nums .k{font-size:12px;color:var(--muted)}
@@ -107,8 +107,10 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
 .step h3{margin:0;font-size:16px;display:flex;align-items:center;gap:9px}
 .step h3 i{font-style:normal;display:grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--accent);color:var(--accent-ink);font-size:13px;font-weight:800;flex-shrink:0}
 label.f{display:grid;gap:5px;font-size:14px;font-weight:600;min-width:0}
-input,select{font:inherit;font-size:17px;color:var(--ink);background:var(--field);border:1px solid var(--line);border-radius:10px;padding:12px;width:100%;min-width:0}
-input:focus,select:focus{outline:2px solid var(--accent);outline-offset:0;border-color:transparent}
+input,select,textarea{font:inherit;font-size:17px;color:var(--ink);background:var(--field);border:1px solid var(--line);border-radius:10px;padding:12px;width:100%;min-width:0}
+textarea{resize:vertical;min-height:52px;line-height:1.4}
+.opt{font-weight:400;color:var(--muted)}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--accent);outline-offset:0;border-color:transparent}
 input::placeholder{color:var(--muted);opacity:.7}
 .money-wrap{position:relative}
 .money-wrap input{text-align:right;padding-right:38px}
@@ -381,7 +383,7 @@ function openEditor(id, focusName){
   document.body.classList.add("locked");
   renderForm();
   document.getElementById("sheet").scrollTop = 0;
-  if (focusName) setTimeout(() => document.querySelector('#form [data-f="name"]')?.focus(), 60);
+  if (focusName) document.querySelector('#form [data-f="name"]')?.focus();
 }
 function closeEditor(){
   const c = cur();
@@ -399,7 +401,7 @@ function renderForm(){
     <div class="step">
       <h3><i>1</i>Klient</h3>
       <label class="f">Nazwa klienta<input data-f="name" value="${esc(c.name)}" placeholder="np. Nowak Budownictwo" autocomplete="off" enterkeyhint="next"></label>
-      <label class="f">Za co jest faktura<input data-f="what" value="${esc(c.what)}" placeholder="np. montaż okien, 6 szt." autocomplete="off" enterkeyhint="next"></label>
+      <label class="f"><span>Za co jest faktura <span class="opt">(opcjonalnie)</span></span><textarea data-f="what" rows="2" placeholder="np. montaż okien, 6 szt. Możesz zostawić puste." autocomplete="off">${esc(c.what)}</textarea></label>
       <label class="f">Data faktury<input data-f="date" type="date" value="${esc(c.date)}"></label>
     </div>
 
@@ -604,7 +606,9 @@ async function pdfAll(){
     const r = rs[i];
     const items = c.costs.filter(k => k.value || (k.kind === "hours" && (k.hours || k.rate)));
     const sub = [c.what.trim(), c.date ? fmtDate(c.date) : ""].filter(Boolean).join(" · ");
-    const h = 5 + 4.6 + (sub ? 4.5 : 0) + items.length * 4.5 + 4.5;
+    d.setFontSize(9);
+    const subLines = sub ? d.splitTextToSize(sub, 120).slice(0, 2) : [];
+    const h = 5 + 4.6 + subLines.length * 4 + (subLines.length ? 0.5 : 0) + items.length * 4.5 + 4.5;
     if (w.y - 5 + h > PBOT) { d.addPage(); w.y = 20; head(); }
     // naprzemienne tło wierszy (zebra)
     if (i % 2 === 0) { d.setFillColor(237, 243, 251); d.rect(PL - 3, w.y - 5, PR - PL + 6, h, "F"); }
@@ -615,7 +619,8 @@ async function pdfAll(){
     txt(w, fmt(r.costs), X.cost, {size: 11, align: "right"});
     txt(w, fmt(r.com) + " zł", PR, {bold: true, size: 11.5, color: ACC, align: "right"});
     w.y += 4.6;
-    if (sub) { d.setFontSize(9); txt(w, d.splitTextToSize(sub, 95)[0], PL, {size: 9, color: MUTED}); w.y += 4.5; }
+    subLines.forEach(l => { txt(w, l, PL, {size: 9, color: MUTED}); w.y += 4; });
+    if (subLines.length) w.y += 0.5;
     items.forEach(k => {
       const det = costDetail(k);
       d.setFontSize(9);
@@ -705,7 +710,7 @@ sheet.addEventListener("focusout", e => {
 });
 sheet.addEventListener("keydown", e => {
   if (e.key !== "Enter" || e.target.tagName !== "INPUT") return;
-  const all = [...sheet.querySelectorAll("#form input")];
+  const all = [...sheet.querySelectorAll("#form input, #form textarea")];
   const i = all.indexOf(e.target);
   if (i > -1 && all[i + 1]) { e.preventDefault(); all[i + 1].focus(); }
 });
