@@ -32,13 +32,17 @@ body{margin:0}
 *{box-sizing:border-box}
 body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.45;font-variant-numeric:tabular-nums}
 body.locked{overflow:hidden}
-body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:30;background:var(--accent)}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:30;background:var(--bg)}
 .gut{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
 .inner{max-width:620px;margin:0 auto}
 button{font:inherit;cursor:pointer}
 button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 
 /* ===== ekran główny ===== */
+.cfg-wrap{padding-block:14px}
+.cfg{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;display:grid;gap:12px}
+.cfg-row{display:grid;grid-template-columns:150px 170px 1fr;gap:10px;align-items:end}
+@media (max-width:520px){.cfg-row{grid-template-columns:1fr 1fr}.cfg-row .base{grid-column:1/-1}}
 .top{background:var(--accent);color:var(--accent-ink);padding-block:18px 20px}
 .top .lbl{font-size:14px;font-weight:600;opacity:.9}
 .top .total{font-size:40px;font-weight:800;line-height:1.1;letter-spacing:-.01em;margin-top:2px}
@@ -161,6 +165,30 @@ input::placeholder{color:var(--muted);opacity:.7}
 </head>
 <body>
 <!-- ekran główny -->
+<section class="gut cfg-wrap" aria-label="Ustawienia prowizji">
+  <div class="inner cfg">
+    <label class="f">Kogo dotyczy prowizja
+      <input id="person" placeholder="imię i nazwisko, np. Jan Kowalski" autocomplete="name" enterkeyhint="done">
+    </label>
+    <div class="cfg-row">
+      <label class="f">Stawka prowizji
+        <div class="money-wrap pct"><input id="rate" inputmode="decimal" autocomplete="off"></div>
+      </label>
+      <label class="f">VAT nowych faktur
+        <select id="vatDefault"><option value="23">23%</option><option value="8">8%</option><option value="5">5%</option><option value="0">0%</option></select>
+      </label>
+      <label class="f base">Prowizja liczona od
+        <select id="base">
+          <option value="net-cost">netto minus koszty</option>
+          <option value="net">całego netto</option>
+          <option value="gross-cost">brutto minus koszty</option>
+          <option value="gross">całego brutto</option>
+        </select>
+      </label>
+    </div>
+  </div>
+</section>
+
 <header class="top gut">
   <div class="inner">
     <div class="lbl" id="topLbl">Twoja prowizja łącznie</div>
@@ -176,32 +204,6 @@ input::placeholder{color:var(--muted);opacity:.7}
 
 <main class="gut">
   <div class="inner">
-    <label class="f person">Kogo dotyczy prowizja
-      <input id="person" placeholder="imię i nazwisko, np. Jan Kowalski" autocomplete="name" enterkeyhint="done">
-    </label>
-    <button type="button" class="rule" id="ruleBtn" aria-expanded="false">
-      <span>Liczę <b id="ruleTxt">20% od netto minus koszty</b></span><span class="ch" id="ruleCh">Zmień</span>
-    </button>
-    <div class="setpanel" id="setPanel" hidden>
-      <div class="two">
-        <label class="f">Stawka prowizji
-          <div class="money-wrap pct"><input id="rate" inputmode="decimal" autocomplete="off"></div>
-        </label>
-        <label class="f">VAT dla nowych faktur
-          <select id="vatDefault"><option value="23">23%</option><option value="8">8%</option><option value="5">5%</option><option value="0">0%</option></select>
-        </label>
-      </div>
-      <label class="f">Prowizja liczona od
-        <select id="base">
-          <option value="net-cost">kwoty netto minus koszty</option>
-          <option value="net">całej kwoty netto</option>
-          <option value="gross-cost">kwoty brutto minus koszty</option>
-          <option value="gross">całej kwoty brutto</option>
-        </select>
-      </label>
-      <p class="note">Koszty wpisuj tak samo jak podstawę: przy liczeniu od netto koszty netto, przy brutto koszty brutto.</p>
-    </div>
-
     <div class="h2"><h2>Klienci</h2><span>dotknij, żeby edytować</span></div>
     <div class="list" id="list"></div>
     <p class="copy">© 2026 Wojciech Wieczorek</p>
@@ -339,7 +341,6 @@ function renderMain(){
   if (document.activeElement !== pIn) pIn.value = state.person || "";
   document.getElementById("vatDefault").value = String(state.vat);
   document.getElementById("base").value = state.base;
-  document.getElementById("ruleTxt").textContent = (fmtRate(state.rate) || "0") + "% " + BASE_TXT[state.base];
   renderPerson();
   const shown = state.clients.filter(c => !isBlank(c));
   const list = document.getElementById("list");
@@ -674,11 +675,6 @@ document.getElementById("list").addEventListener("click", e => {
 });
 document.getElementById("addBtn").addEventListener("click", () => {
   const c = newClient(); state.clients.unshift(c); openEditor(c.id, true);
-});
-document.getElementById("ruleBtn").addEventListener("click", e => {
-  const p = document.getElementById("setPanel"); p.hidden = !p.hidden;
-  e.currentTarget.setAttribute("aria-expanded", String(!p.hidden));
-  document.getElementById("ruleCh").textContent = p.hidden ? "Zmień" : "Zwiń";
 });
 document.getElementById("rate").addEventListener("input", e => { state.rate = parseNum(e.target.value); const v = e.target.value; renderMain(); e.target.value = v; changed(); });
 document.getElementById("base").addEventListener("change", e => { state.base = e.target.value; renderMain(); changed(); });
