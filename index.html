@@ -231,6 +231,7 @@ input::placeholder{color:var(--muted);opacity:.7}
 
 <script>
 const LS_KEY = "kalk-prowizji-v1";
+const WHAT_PRESETS = ["Pozyskanie dotacji UE", "R&D", "Wdrożenie systemu Netrix"];
 const COST_PRESETS = ["Godziny pracowników","Materiały","Transport","Podwykonawca","Sprzęt"];
 const BASE_TXT = {"net-cost":"od netto minus koszty","net":"od całego netto","gross-cost":"od brutto minus koszty","gross":"od całego brutto"};
 
@@ -403,6 +404,7 @@ function renderForm(){
       <h3><i>1</i>Klient</h3>
       <label class="f">Nazwa klienta<input data-f="name" value="${esc(c.name)}" placeholder="np. Nowak Budownictwo" autocomplete="off" enterkeyhint="next"></label>
       <label class="f"><span>Za co jest faktura <span class="opt">(opcjonalnie)</span></span><textarea data-f="what" rows="2" placeholder="np. montaż okien, 6 szt. Możesz zostawić puste." autocomplete="off">${esc(c.what)}</textarea></label>
+      <div class="quick" aria-label="Szybki wybór">${WHAT_PRESETS.map(v => `<button type="button" class="pill" data-act="what" data-v="${esc(v)}" aria-pressed="${c.what.trim() === v}">${esc(v)}</button>`).join("")}</div>
       <div class="two">
         <label class="f"><span>Nr faktury <span class="opt">(opcjonalnie)</span></span><input data-f="invoiceNo" value="${esc(c.invoiceNo || "")}" placeholder="np. 12/10/2026" autocomplete="off" enterkeyhint="next"></label>
         <label class="f">Data faktury<input data-f="date" type="date" value="${esc(c.date)}"></label>
@@ -729,6 +731,11 @@ sheet.addEventListener("click", e => {
   if (act === "type") {
     const a = amounts(c);
     c.amountType = b.dataset.v; c.amount = b.dataset.v === "brutto" ? a.gross : a.net;
+    renderForm(); changed(); return;
+  }
+  if (act === "what") {
+    const v = b.dataset.v, cur0 = c.what.trim();
+    c.what = !cur0 || WHAT_PRESETS.includes(cur0) ? v : (cur0.includes(v) ? cur0 : cur0 + ", " + v);
     renderForm(); changed(); return;
   }
   if (act === "vat") {
