@@ -550,29 +550,61 @@ async function pdfClient(c){
 async function pdfAll(){
   const list = state.clients.filter(c => !isBlank(c));
   if (!list.length) { toast("Najpierw dodaj klienta."); return; }
-  const w = newDoc();
+  const w = newDoc(), d = w.doc;
   pdfHeader(w, `Wszyscy klienci (${list.length})`);
-  const cols = [[PL, "Klient", null], [118, "Netto", "right"], [152, "Koszty", "right"], [PR, "Prowizja", "right"]];
-  const line = (vals, o = {}) => {
-    ensure(w, 8);
-    cols.forEach(([x, , al], i) => txt(w, vals[i], x, {...o, align: al || undefined}));
-    w.y += 6.5;
+  const rs = list.map(calc);
+  const tn = round2(rs.reduce((a, r) => a + r.net, 0)), tc = round2(rs.reduce((a, r) => a + r.costs, 0)), tp = round2(rs.reduce((a, r) => a + r.com, 0));
+  const rate = fmtRate(state.rate) || "0";
+
+  // wyróżniona suma na górze
+  d.setFillColor(226, 239, 231); d.roundedRect(PL, w.y - 6, PR - PL, 15, 2, 2, "F");
+  txt(w, "Twoja prowizja łącznie", PL + 4, {bold: true, size: 14, color: ACC});
+  txt(w, fmt(tp) + " zł", PR - 4, {bold: true, size: 16, color: ACC, align: "right"});
+  w.y += 4.5;
+  txt(w, `Faktury netto ${fmt(tn)} zł · koszty ${fmt(tc)} zł`, PL + 4, {size: 9, color: MUTED});
+  w.y += 12;
+
+  const X = {net: 120, cost: 155};
+  const head = () => {
+    txt(w, "Klient", PL, {bold: true, size: 9.5, color: MUTED});
+    txt(w, "Netto", X.net, {bold: true, size: 9.5, color: MUTED, align: "right"});
+    txt(w, "Koszty", X.cost, {bold: true, size: 9.5, color: MUTED, align: "right"});
+    txt(w, "Prowizja", PR, {bold: true, size: 9.5, color: MUTED, align: "right"});
+    w.y += 4.5; hr(w); w.y += 1.5;
   };
-  line(cols.map(c => c[1]), {bold: true, size: 10, color: MUTED}); hr(w);
-  let tn = 0, tc = 0, tp = 0;
-  list.forEach(c => {
-    const r = calc(c); tn += r.net; tc += r.costs; tp += r.com;
-    w.doc.setFontSize(11);
-    const nm = w.doc.splitTextToSize(c.name.trim() || "Bez nazwy", 62)[0];
-    line([nm, fmt(r.net), fmt(r.costs), fmt(r.com)], {size: 11});
+  head();
+  list.forEach((c, i) => {
+    const r = rs[i];
+    const items = c.costs.filter(k => k.value || (k.kind === "hours" && (k.hours || k.rate)));
+    const sub = [c.what.trim(), c.date ? fmtDate(c.date) : ""].filter(Boolean).join(" · ");
+    const h = 8 + (sub ? 4.5 : 0) + items.length * 4.5 + 5 + 6;
+    if (w.y + h > PBOT) { d.addPage(); w.y = 20; head(); }
+    d.setFontSize(11.5); d.setFont("K", "bold");
+    txt(w, d.splitTextToSize(c.name.trim() || "Bez nazwy", 80)[0], PL, {bold: true, size: 11.5});
+    txt(w, fmt(r.net), X.net, {size: 11, align: "right"});
+    txt(w, fmt(r.costs), X.cost, {size: 11, align: "right"});
+    txt(w, fmt(r.com) + " zł", PR, {bold: true, size: 11.5, color: ACC, align: "right"});
+    w.y += 4.6;
+    if (sub) { d.setFontSize(9); txt(w, d.splitTextToSize(sub, 95)[0], PL, {size: 9, color: MUTED}); w.y += 4.5; }
+    items.forEach(k => {
+      const det = costDetail(k);
+      d.setFontSize(9);
+      txt(w, d.splitTextToSize((k.name.trim() || "Koszt") + (det ? "  ·  " + det : ""), 110)[0], PL + 4, {size: 9, color: MUTED});
+      txt(w, fmt(k.value || 0), X.cost, {size: 9, color: MUTED, align: "right"});
+      w.y += 4.5;
+    });
+    const calcTxt = r.minusCost
+      ? `Prowizja: (${fmt(r.start)} − ${fmt(r.costs)}) × ${rate}% = ${fmt(r.com)} zł`
+      : `Prowizja: ${fmt(r.start)} × ${rate}% = ${fmt(r.com)} zł`;
+    txt(w, calcTxt + (r.useGross ? " (od brutto)" : ""), PL + 4, {size: 9, color: ACC});
+    w.y += 7; hr(w); w.y += 1.5;
   });
-  hr(w);
-  line(["Razem", fmt(round2(tn)), fmt(round2(tc)), fmt(round2(tp)) + " zł"], {bold: true, size: 12});
-  w.y += 2;
-  row(w, "Twoja prowizja łącznie", fmt(round2(tp)) + " zł", {bold: true, size: 16, color: ACC});
-  w.y += 6;
-  txt(w, "Szczegóły", PL, {bold: true, size: 13}); w.y += 8;
-  list.forEach((c, i) => { if (i) { w.y += 4; hr(w); w.y += 3; } pdfClientBlock(w, c); });
+  if (w.y + 12 > PBOT) { d.addPage(); w.y = 20; }
+  w.y += 1;
+  txt(w, "Razem", PL, {bold: true, size: 12});
+  txt(w, fmt(tn), X.net, {bold: true, size: 12, align: "right"});
+  txt(w, fmt(tc), X.cost, {bold: true, size: 12, align: "right"});
+  txt(w, fmt(tp) + " zł", PR, {bold: true, size: 12, color: ACC, align: "right"});
   await savePdf(w.doc, `Zestawienie prowizji - ${fmtDate(today())}.pdf`);
 }
 async function savePdf(doc, filename){
