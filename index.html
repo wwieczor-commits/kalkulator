@@ -577,8 +577,10 @@ async function pdfAll(){
     const r = rs[i];
     const items = c.costs.filter(k => k.value || (k.kind === "hours" && (k.hours || k.rate)));
     const sub = [c.what.trim(), c.date ? fmtDate(c.date) : ""].filter(Boolean).join(" · ");
-    const h = 8 + (sub ? 4.5 : 0) + items.length * 4.5 + 5 + 6;
-    if (w.y + h > PBOT) { d.addPage(); w.y = 20; head(); }
+    const h = 5 + 4.6 + (sub ? 4.5 : 0) + items.length * 4.5 + 4.5;
+    if (w.y - 5 + h > PBOT) { d.addPage(); w.y = 20; head(); }
+    // naprzemienne tło wierszy (zebra)
+    if (i % 2 === 0) { d.setFillColor(238, 244, 240); d.rect(PL - 3, w.y - 5, PR - PL + 6, h, "F"); }
     d.setFontSize(11.5); d.setFont("K", "bold");
     txt(w, d.splitTextToSize(c.name.trim() || "Bez nazwy", 80)[0], PL, {bold: true, size: 11.5});
     txt(w, fmt(r.net), X.net, {size: 11, align: "right"});
@@ -597,10 +599,10 @@ async function pdfAll(){
       ? `Prowizja: (${fmt(r.start)} − ${fmt(r.costs)}) × ${rate}% = ${fmt(r.com)} zł`
       : `Prowizja: ${fmt(r.start)} × ${rate}% = ${fmt(r.com)} zł`;
     txt(w, calcTxt + (r.useGross ? " (od brutto)" : ""), PL + 4, {size: 9, color: ACC});
-    w.y += 7; hr(w); w.y += 1.5;
+    w.y += 4.5 + 5;
   });
   if (w.y + 12 > PBOT) { d.addPage(); w.y = 20; }
-  w.y += 1;
+  w.y -= 2; hr(w); w.y += 2;
   txt(w, "Razem", PL, {bold: true, size: 12});
   txt(w, fmt(tn), X.net, {bold: true, size: 12, align: "right"});
   txt(w, fmt(tc), X.cost, {bold: true, size: 12, align: "right"});
