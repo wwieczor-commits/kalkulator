@@ -47,6 +47,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
 .stat .k{font-size:12px;opacity:.85}
 .stat .v{font-weight:700;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
+.person{margin-top:14px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
 .rule{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-top:14px;width:100%;color:var(--ink);text-align:left}
 .rule b{font-weight:700}
 .rule .ch{color:var(--accent);font-weight:700;font-size:14px;flex-shrink:0}
@@ -175,6 +176,9 @@ input::placeholder{color:var(--muted);opacity:.7}
 
 <main class="gut">
   <div class="inner">
+    <label class="f person">Kogo dotyczy prowizja
+      <input id="person" placeholder="imię i nazwisko, np. Jan Kowalski" autocomplete="name" enterkeyhint="done">
+    </label>
     <button type="button" class="rule" id="ruleBtn" aria-expanded="false">
       <span>Liczę <b id="ruleTxt">20% od netto minus koszty</b></span><span class="ch" id="ruleCh">Zmień</span>
     </button>
@@ -304,7 +308,7 @@ function changed(){ state._touched = true; state._savedAt = Date.now(); save(); 
 function normalize(s){
   s = s || {};
   const clients = (Array.isArray(s.clients) ? s.clients : []).filter(c => !c.example);
-  return {rate: s.rate ?? 20, base: s.base || "net-cost", vat: s.vat ?? 23, clients, _touched: s._touched, _savedAt: s._savedAt || s.savedAt};
+  return {person: s.person || "", rate: s.rate ?? 20, base: s.base || "net-cost", vat: s.vat ?? 23, clients, _touched: s._touched, _savedAt: s._savedAt || s.savedAt};
 }
 async function connectDb(){
   try {
@@ -331,6 +335,8 @@ async function connectDb(){
 /* ---------- ekran główny ---------- */
 function renderMain(){
   document.getElementById("rate").value = fmtRate(state.rate);
+  const pIn = document.getElementById("person");
+  if (document.activeElement !== pIn) pIn.value = state.person || "";
   document.getElementById("vatDefault").value = String(state.vat);
   document.getElementById("base").value = state.base;
   document.getElementById("ruleTxt").textContent = (fmtRate(state.rate) || "0") + "% " + BASE_TXT[state.base];
@@ -512,7 +518,11 @@ function row(w, left, right, o = {}){
 }
 function hr(w){ w.doc.setDrawColor(...LINE); w.doc.setLineWidth(0.3); w.doc.line(PL, w.y - 2.5, PR, w.y - 2.5); w.y += 2; }
 function pdfHeader(w, sub){
-  txt(w, "Zestawienie prowizji", PL, {bold: true, size: 20, color: ACC}); w.y += 7;
+  txt(w, "Zestawienie prowizji", PL, {bold: true, size: 20, color: ACC}); w.y += 7.5;
+  if ((state.person || "").trim()) {
+    const lw = txt(w, "Prowizja dla: ", PL, {size: 12, color: MUTED});
+    txt(w, state.person.trim(), PL + lw, {bold: true, size: 12}); w.y += 6.5;
+  }
   txt(w, sub, PL, {size: 10.5, color: MUTED});
   txt(w, "Wygenerowano " + fmtDate(today()), PR, {size: 10.5, color: MUTED, align: "right"}); w.y += 5;
   txt(w, `Prowizja ${fmtRate(state.rate) || "0"}% ${BASE_TXT[state.base]}`, PL, {size: 10.5, color: MUTED}); w.y += 8;
@@ -666,6 +676,7 @@ document.getElementById("ruleBtn").addEventListener("click", e => {
 });
 document.getElementById("rate").addEventListener("input", e => { state.rate = parseNum(e.target.value); const v = e.target.value; renderMain(); e.target.value = v; changed(); });
 document.getElementById("base").addEventListener("change", e => { state.base = e.target.value; renderMain(); changed(); });
+document.getElementById("person").addEventListener("input", e => { state.person = e.target.value; changed(); });
 document.getElementById("vatDefault").addEventListener("change", e => { state.vat = Number(e.target.value); changed(); });
 
 const sheet = document.getElementById("sheet");
