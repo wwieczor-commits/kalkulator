@@ -64,7 +64,38 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
 .copy{margin:22px 0 0;padding-bottom:110px;text-align:center;font-size:12px;color:var(--muted)}
 .card{background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:14px;overflow:hidden}
 .card-main{display:block;width:100%;text-align:left;background:none;border:0;color:inherit;padding:14px}
-.card-foot{border-top:1px solid var(--line);display:flex;justify-content:flex-end}
+.card-foot{border-top:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}
+.inrep{display:flex;align-items:center;gap:9px;padding:0 14px;min-height:44px;font-size:14px;font-weight:600;cursor:pointer;color:var(--ink)}
+.inrep input{width:20px;height:20px;padding:0;margin:0;accent-color:var(--accent);cursor:pointer}
+.card.off .card-main{opacity:.6}
+.repbar{display:flex;justify-content:space-between;align-items:center;gap:6px 12px;flex-wrap:wrap;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 14px;font-size:14px}
+.repbar b{font-weight:700}
+.repbar .lnk{padding:4px 0;font-size:14px;color:var(--accent);font-weight:600}
+.repbar .lnk + .lnk{margin-left:14px}
+.btn:disabled{opacity:.5;cursor:default}
+.mfilter select{font-size:15px;font-weight:600;padding:7px 10px;width:auto;max-width:200px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.acct{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:14px;color:var(--muted);margin:-4px 0 -6px}
+.acct span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.acct .lnk{color:var(--accent);font-weight:700;padding:4px 0;flex-shrink:0}
+.migrate{background:var(--accent-soft);border-radius:12px;padding:12px 14px;font-size:14px;display:grid;gap:8px}
+.migrate div{display:flex;gap:16px}
+.migrate .lnk{padding:2px 0;color:var(--accent);font-weight:700;font-size:14px}
+
+/* ===== logowanie ===== */
+body.v-auth .app-only{display:none!important}
+body:not(.v-auth) #auth{display:none!important}
+.auth{min-height:100vh;display:grid;align-items:center;padding-block:24px}
+.auth-card{width:100%;max-width:420px;margin:0 auto;background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.auth-head{background:var(--accent);color:var(--accent-ink);padding:20px 18px}
+.auth-head h1{margin:0;font-size:24px;font-weight:800;letter-spacing:-.01em}
+.auth-head p{margin:4px 0 0;opacity:.9;font-size:14px}
+.auth-body{padding:18px;display:grid;gap:14px}
+.auth-msg{font-size:14px;border-radius:10px;padding:10px 12px;background:var(--accent-soft);color:var(--ink)}
+.auth-msg.err{background:var(--danger-soft);color:var(--danger);font-weight:600}
+.auth-links{display:flex;justify-content:space-between;gap:6px 14px;flex-wrap:wrap}
+.auth-links .lnk{color:var(--accent);font-weight:600;padding:4px 0}
+.auth .copy{padding-bottom:0}
 .card-foot button{background:none;border:0;color:var(--accent);font-weight:700;font-size:14px;padding:11px 14px}
 .cb{margin-top:16px;border-top:1px dashed var(--line);padding-top:10px;display:grid;gap:6px}
 .cb-t{font-size:12px;color:var(--muted);font-weight:600}
@@ -87,6 +118,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
 .card .nums .com .v{color:var(--accent);font-weight:800;font-size:17px}
 .card .nums .com .k{color:var(--accent)}
 .clear{background:none;border:1px solid var(--line);color:var(--danger);border-radius:12px;padding:13px;font-weight:600;margin-top:14px}
+.clear:disabled{opacity:.5;cursor:default}
 .clear.sure{background:var(--danger-soft);border-color:var(--danger);font-weight:700}
 .empty{text-align:center;padding:32px 18px;color:var(--muted);background:var(--card);border:1px dashed var(--line);border-radius:14px}
 .empty b{display:block;color:var(--ink);font-size:17px;margin-bottom:4px}
@@ -166,9 +198,25 @@ input::placeholder{color:var(--muted);opacity:.7}
 </style>
 </head>
 <body>
+<!-- logowanie (tylko gdy podłączona jest baza Supabase) -->
+<section class="auth gut" id="auth" aria-label="Logowanie">
+  <div class="auth-card">
+    <div class="auth-head"><h1>Kalkulator prowizji</h1><p id="authSub">Zaloguj się, żeby zobaczyć swoje faktury</p></div>
+    <form class="auth-body" id="authForm" novalidate>
+      <div class="auth-msg" id="authMsg" hidden></div>
+      <label class="f" id="authEmailF">E-mail<input id="authEmail" type="email" autocomplete="email" inputmode="email" placeholder="jan@firma.pl" required></label>
+      <label class="f" id="authPassF">Hasło<input id="authPass" type="password" autocomplete="current-password" placeholder="co najmniej 6 znaków" required></label>
+      <button type="submit" class="btn" id="authBtn">Zaloguj się</button>
+      <div class="auth-links" id="authLinks"></div>
+    </form>
+  </div>
+  <p class="copy">© 2026 Wojciech Wieczorek</p>
+</section>
+
 <!-- ekran główny -->
-<section class="gut cfg-wrap" aria-label="Ustawienia prowizji">
+<section class="gut cfg-wrap app-only" aria-label="Ustawienia prowizji">
   <div class="inner cfg">
+    <div class="acct" id="acct" hidden><span id="acctEmail"></span><button type="button" class="lnk" id="logoutBtn">Wyloguj</button></div>
     <label class="f">Handlowiec (kogo dotyczy prowizja)
       <input id="person" placeholder="imię i nazwisko, np. Jan Kowalski" autocomplete="name" enterkeyhint="done">
     </label>
@@ -191,7 +239,7 @@ input::placeholder{color:var(--muted);opacity:.7}
   </div>
 </section>
 
-<header class="top gut">
+<header class="top gut app-only">
   <div class="inner">
     <div class="lbl" id="topLbl">Twoja prowizja łącznie</div>
     <div class="total" id="sumCom">0,00 zł</div>
@@ -204,16 +252,16 @@ input::placeholder{color:var(--muted);opacity:.7}
   </div>
 </header>
 
-<main class="gut">
+<main class="gut app-only">
   <div class="inner">
-    <div class="h2"><h2>Klienci</h2><span>dotknij, żeby edytować</span></div>
+    <div class="h2"><h2>Klienci</h2><label class="mfilter"><span class="sr">Pokaż miesiąc</span><select id="month" aria-label="Pokaż miesiąc"></select></label></div>
     <div class="list" id="list"></div>
-    <p class="copy">© 2026 Wojciech Wieczorek</p>
+    <p class="copy">© 2026 Wojciech Wieczorek · wersja 31.10.2026</p>
   </div>
 </main>
 
 <div class="toast" id="toast" role="status" hidden></div>
-<div class="fab gut"><div class="inner"><button type="button" class="btn" id="addBtn">+ Dodaj klienta</button></div></div>
+<div class="fab gut app-only"><div class="inner"><button type="button" class="btn" id="addBtn">+ Dodaj klienta</button></div></div>
 
 <!-- ekran edycji -->
 <section class="sheet" id="sheet" hidden aria-label="Edycja klienta">
@@ -230,7 +278,17 @@ input::placeholder{color:var(--muted);opacity:.7}
 </section>
 
 <script>
+/* ===== Baza danych Supabase =====
+   Wpisz tu adres projektu i klucz "anon public" (Project Settings -> API).
+   Gdy oba pola są puste, kalkulator działa bez logowania, a dane są tylko w tej przeglądarce.
+   Projekt Wojciecha: https://aypxpsuzobcjoiquucws.supabase.co (klucz publishable z Supabase -> API Keys). */
+const SUPABASE_URL = "";
+const SUPABASE_ANON_KEY = "";
+const CLOUD = !!(SUPABASE_URL && SUPABASE_ANON_KEY);
+
 const LS_KEY = "kalk-prowizji-v1";
+const MONTH_KEY = "kalk-prowizji-miesiac";
+const MONTHS = ["Styczeń","Luty","Marzec","Kwiecień","Maj","Czerwiec","Lipiec","Sierpień","Wrzesień","Październik","Listopad","Grudzień"];
 const WHAT_PRESETS = ["Pozyskanie dotacji UE", "R&D", "Wdrożenie systemu Netrix"];
 const COST_PRESETS = ["Godziny pracowników","Materiały","Transport","Podwykonawca","Sprzęt"];
 const BASE_TXT = {"net-cost":"od netto minus koszty","net":"od całego netto","gross-cost":"od brutto minus koszty","gross":"od całego brutto"};
@@ -239,8 +297,15 @@ let state = null;
 let editId = null;
 let sureDelete = false;
 let sureClear = false, sureClearTimer = null;
+let monthSel = null;
+let sureDelSel = false, sureDelSelTimer = null;
 
-const uid = () => Math.random().toString(36).slice(2, 10);
+const uid = () => {
+  if (window.crypto?.randomUUID) return crypto.randomUUID();
+  const b = crypto.getRandomValues(new Uint8Array(16)); b[6] = b[6] & 15 | 64; b[8] = b[8] & 63 | 128;
+  const h = [...b].map(x => x.toString(16).padStart(2, "0")).join("");
+  return `${h.slice(0,8)}-${h.slice(8,12)}-${h.slice(12,16)}-${h.slice(16,20)}-${h.slice(20)}`;
+};
 const round2 = n => Math.round((n + Number.EPSILON) * 100) / 100;
 const parseNum = s => { const v = parseFloat(String(s ?? "").replace(/[\s ]/g, "").replace(",", ".")); return isFinite(v) ? v : 0; };
 const group = d => d.replace(/\B(?=(\d{3})+(?!\d))/g, " ");
@@ -267,7 +332,11 @@ function liveMoney(el){
   try { el.setSelectionRange(c, c); } catch(e){}
 }
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
-const today = () => new Date().toISOString().slice(0,10);
+const today = () => { const d = new Date(); return new Date(d - d.getTimezoneOffset() * 6e4).toISOString().slice(0,10); };
+const monthOf = c => (c.date || "").slice(0, 7);
+const monthName = m => { if (m === "all") return "Wszystkie miesiące"; if (!m) return "Bez daty"; const [y, mm] = m.split("-"); return MONTHS[+mm - 1] + " " + y; };
+const inMonth = c => monthSel === "all" || monthOf(c) === monthSel;
+const inRep = c => c.inReport !== false;
 const fmtDate = d => { if (!d) return ""; const [y,m,dd] = d.split("-"); return `${dd}.${m}.${y}`; };
 
 const HOURS_NAME = "Godziny pracowników";
@@ -275,7 +344,7 @@ function newCost(name){
   return name === HOURS_NAME ? {id: uid(), name, kind: "hours", hours: 0, rate: 0, value: 0} : {id: uid(), name, value: 0};
 }
 function newClient(){
-  return {id: uid(), name: "", what: "", invoiceNo: "", date: today(), amount: 0, amountType: "netto", vat: state.vat, costs: [newCost("Godziny pracowników"), newCost("Materiały")]};
+  return {id: uid(), name: "", what: "", invoiceNo: "", date: today(), amount: 0, amountType: "netto", vat: state.vat, inReport: true, costs: [newCost("Godziny pracowników"), newCost("Materiały")]};
 }
 const fvLabel = no => { no = (no || "").trim(); return !no ? "" : /^(fv|faktura)/i.test(no) ? no : "FV " + no; };
 const isBlank = c => !c.name.trim() && !c.what.trim() && !(c.invoiceNo || "").trim() && !c.amount && c.costs.every(k => !k.value);
@@ -298,9 +367,11 @@ function calc(c){
 /* ---------- zapis ---------- */
 let docRef = null, saveTimer = null, saving = Promise.resolve();
 const setSync = t => document.getElementById("sync").textContent = t;
-function saveLocal(){ try { localStorage.setItem(LS_KEY, JSON.stringify(state)); } catch(e){} }
+const cacheKey = () => CLOUD ? (user ? LS_KEY + ":" + user.id : null) : LS_KEY;
+function saveLocal(){ const k = cacheKey(); if (!k || !state) return; try { localStorage.setItem(k, JSON.stringify(state)); } catch(e){} }
 function save(){
   saveLocal();
+  if (CLOUD) return scheduleFlush();
   if (!docRef) return;
   clearTimeout(saveTimer);
   saveTimer = setTimeout(() => {
@@ -311,14 +382,271 @@ function save(){
   }, 700);
 }
 function changed(){ state._touched = true; state._savedAt = Date.now(); save(); }
+function normClient(c){
+  return {...c, name: c.name || "", what: c.what || "", invoiceNo: c.invoiceNo || "", date: c.date || "", amount: Number(c.amount) || 0,
+    amountType: c.amountType === "brutto" ? "brutto" : "netto", vat: c.vat ?? 23, inReport: c.inReport !== false, costs: Array.isArray(c.costs) ? c.costs : []};
+}
 function normalize(s){
   s = s || {};
-  const clients = (Array.isArray(s.clients) ? s.clients : []).filter(c => !c.example);
+  const clients = (Array.isArray(s.clients) ? s.clients : []).filter(c => c && !c.example).map(normClient);
   return {person: s.person || "", rate: s.rate ?? 20, base: s.base || "net-cost", vat: s.vat ?? 23, clients, _touched: s._touched, _savedAt: s._savedAt || s.savedAt};
 }
+/* ---------- baza Supabase: logowanie i zapis faktur ---------- */
+let sb = null, user = null, recovering = false, loadSeq = 0;
+let synced = new Map(), syncedSettings = null, flushTimer = null, flushing = false, flushAgain = false;
+const settingsOf = s => ({person: s.person || "", rate: Number(s.rate) || 0, base: s.base, vat: Number(s.vat) || 0});
+const invRow = (c, j) => ({id: c.id, user_id: user.id, invoice_date: c.date || null, in_report: inRep(c), data: JSON.parse(j), updated_at: new Date().toISOString()});
+
+function scheduleFlush(ms = 700){ clearTimeout(flushTimer); flushTimer = setTimeout(flush, ms); }
+async function flush(){
+  if (!sb || !user || !state || syncedSettings === null) return;
+  if (flushing) { flushAgain = true; return; }
+  flushing = true; clearTimeout(flushTimer);
+  const me = user.id;
+  try {
+    const st = JSON.stringify(settingsOf(state));
+    const ups = [], snap = new Map(), alive = new Set();
+    for (const c of state.clients) {
+      alive.add(c.id);
+      const j = JSON.stringify(c);
+      if (synced.get(c.id) === j) continue;
+      if (isBlank(c) && !synced.has(c.id)) continue;
+      snap.set(c.id, j); ups.push(invRow(c, j));
+    }
+    const dels = [...synced.keys()].filter(id => !alive.has(id));
+    if (st !== syncedSettings || ups.length || dels.length) setSync("Zapisuję…");
+    if (st !== syncedSettings) {
+      const {error} = await sb.from("settings").upsert({user_id: me, ...JSON.parse(st), updated_at: new Date().toISOString()});
+      if (error) throw error;
+      syncedSettings = st;
+    }
+    if (ups.length) {
+      const {error} = await sb.from("invoices").upsert(ups);
+      if (error) throw error;
+      snap.forEach((j, id) => synced.set(id, j));
+    }
+    if (dels.length) {
+      const {error} = await sb.from("invoices").delete().in("id", dels);
+      if (error) throw error;
+      dels.forEach(id => synced.delete(id));
+    }
+    if (user?.id === me) setSync("Zapisano w bazie, widać na każdym urządzeniu");
+  } catch(e){
+    console.warn(e);
+    flushing = false; flushAgain = false;
+    if (user?.id === me) { setSync("Nie udało się zapisać w bazie. Ponowię za chwilę, dane są w tej przeglądarce."); scheduleFlush(6000); }
+    return;
+  }
+  flushing = false;
+  if (flushAgain) { flushAgain = false; flush(); }
+}
+window.addEventListener("online", () => scheduleFlush(300));
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") flush(); });
+
+async function fetchAll(){
+  const rows = [];
+  for (let from = 0; ; from += 1000) {
+    const {data, error} = await sb.from("invoices").select("id,data,in_report,invoice_date,created_at")
+      .eq("user_id", user.id).order("invoice_date", {ascending: false, nullsFirst: false}).order("created_at", {ascending: false})
+      .range(from, from + 999);
+    if (error) throw error;
+    rows.push(...data);
+    if (data.length < 1000) return rows;
+  }
+}
+async function loadCloud(){
+  const seq = ++loadSeq, me = user.id;
+  setView("loading");
+  try {
+    const [set, rows] = await Promise.all([
+      sb.from("settings").select("person,rate,base,vat").eq("user_id", me).maybeSingle(),
+      fetchAll()
+    ]);
+    if (set.error) throw set.error;
+    if (seq !== loadSeq || user?.id !== me) return;
+    const s = set.data || {};
+    state = normalize({person: s.person, rate: s.rate != null ? Number(s.rate) : 20, base: s.base, vat: s.vat != null ? Number(s.vat) : 23,
+      clients: rows.map(r => ({...r.data, id: r.id, inReport: r.in_report}))});
+    synced = new Map(state.clients.map(c => [c.id, JSON.stringify(c)]));
+    syncedSettings = set.data ? JSON.stringify(settingsOf(state)) : "";
+    saveLocal();
+    document.getElementById("acctEmail").textContent = user.email || "";
+    document.getElementById("acct").hidden = false;
+    setView("app");
+    renderMain();
+    setSync("Zapisano w bazie, widać na każdym urządzeniu");
+    if (!(state.person || "").trim()) document.getElementById("person").focus();
+    if (!set.data) scheduleFlush(100);
+  } catch(e){
+    console.warn(e);
+    if (seq !== loadSeq) return;
+    showAuth("error", "Nie udało się pobrać danych z bazy. Sprawdź internet i spróbuj ponownie.");
+  }
+}
+
+/* ekran logowania: tryby login, signup, reset, newpass, loading, error */
+let authMode = "login";
+function setView(v){
+  document.body.classList.toggle("v-auth", v !== "app");
+  if (v === "loading") showAuth("loading");
+}
+function authNote(t, err){
+  const m = document.getElementById("authMsg");
+  m.hidden = !t; m.textContent = t || ""; m.classList.toggle("err", !!err);
+}
+function showAuth(mode, msg, err){
+  authMode = mode;
+  document.body.classList.add("v-auth");
+  const T = {
+    login:   ["Zaloguj się, żeby zobaczyć swoje faktury", "Zaloguj się", true, true],
+    signup:  ["Załóż konto handlowca", "Załóż konto", true, true],
+    reset:   ["Podaj e-mail, wyślemy link do zmiany hasła", "Wyślij link", true, false],
+    newpass: ["Ustaw nowe hasło", "Zapisz hasło", false, true],
+    loading: ["Ładuję Twoje faktury…", "", false, false],
+    error:   ["Coś poszło nie tak", "Spróbuj ponownie", false, false]
+  }[mode];
+  document.getElementById("authSub").textContent = T[0];
+  const btn = document.getElementById("authBtn");
+  btn.textContent = T[1]; btn.hidden = !T[1]; btn.disabled = false;
+  document.getElementById("authEmailF").hidden = !T[2];
+  document.getElementById("authPassF").hidden = !T[3];
+  const pw = document.getElementById("authPass");
+  pw.autocomplete = mode === "login" ? "current-password" : "new-password";
+  pw.value = "";
+  const L = {
+    login:  `<button type="button" class="lnk" data-auth="signup">Nie masz konta? Załóż je</button><button type="button" class="lnk" data-auth="reset">Nie pamiętam hasła</button>`,
+    signup: `<button type="button" class="lnk" data-auth="login">Mam już konto, zaloguj</button>`,
+    reset:  `<button type="button" class="lnk" data-auth="login">Wróć do logowania</button>`,
+    error:  user ? `<button type="button" class="lnk" data-auth="logout">Wyloguj</button>` : ""
+  }[mode] || "";
+  document.getElementById("authLinks").innerHTML = L;
+  authNote(msg || "", err);
+  if (T[2] && !document.getElementById("authEmail").value) setTimeout(() => document.getElementById("authEmail").focus(), 50);
+  else if (T[3]) setTimeout(() => pw.focus(), 50);
+}
+const AUTH_ERR = e => {
+  const m = (e?.message || "").toLowerCase();
+  if (m.includes("invalid login")) return "Zły e-mail albo hasło.";
+  if (m.includes("not confirmed")) return "Najpierw potwierdź adres e-mail. Link jest w wiadomości od Supabase (sprawdź też spam).";
+  if (m.includes("already registered") || m.includes("already been registered")) return "To konto już istnieje. Zaloguj się albo użyj „Nie pamiętam hasła”.";
+  if (m.includes("password") && (m.includes("6") || m.includes("short") || m.includes("weak"))) return "Hasło jest za krótkie albo za proste. Użyj co najmniej 6 znaków.";
+  if (m.includes("rate limit") || m.includes("security purposes")) return "Za dużo prób. Odczekaj chwilę i spróbuj ponownie.";
+  if (m.includes("signups not allowed") || m.includes("signup is disabled")) return "Zakładanie nowych kont jest wyłączone. Poproś administratora o zaproszenie.";
+  if (m.includes("fetch") || m.includes("network")) return "Brak połączenia z bazą. Sprawdź internet.";
+  return "Nie udało się: " + (e?.message || "nieznany błąd");
+};
+const redirectUrl = () => location.origin + location.pathname;
+
+async function onAuthSubmit(e){
+  e.preventDefault();
+  const email = document.getElementById("authEmail").value.trim(), pass = document.getElementById("authPass").value;
+  const btn = document.getElementById("authBtn");
+  if (authMode === "error") { if (user) loadCloud(); else showAuth("login"); return; }
+  if (["login", "signup", "reset"].includes(authMode) && !/^\S+@\S+\.\S+$/.test(email)) return authNote("Wpisz poprawny adres e-mail.", true);
+  if (["login", "signup", "newpass"].includes(authMode) && pass.length < 6) return authNote("Hasło musi mieć co najmniej 6 znaków.", true);
+  btn.disabled = true; authNote("Chwileczkę…");
+  try {
+    if (authMode === "login") {
+      const {error} = await sb.auth.signInWithPassword({email, password: pass});
+      if (error) throw error;
+    } else if (authMode === "signup") {
+      const {data, error} = await sb.auth.signUp({email, password: pass, options: {emailRedirectTo: redirectUrl()}});
+      if (error) throw error;
+      if (!data.session) { showAuth("login", "Konto założone. Otwórz wiadomość, którą wysłaliśmy na " + email + ", i kliknij link potwierdzający. Potem zaloguj się tutaj."); return; }
+    } else if (authMode === "reset") {
+      const {error} = await sb.auth.resetPasswordForEmail(email, {redirectTo: redirectUrl()});
+      if (error) throw error;
+      showAuth("login", "Jeśli konto istnieje, na " + email + " przyszedł link do ustawienia nowego hasła."); return;
+    } else if (authMode === "newpass") {
+      const {data, error} = await sb.auth.updateUser({password: pass});
+      if (error) throw error;
+      recovering = false; toast("Hasło zmienione");
+      onSignedIn(data.user); return;
+    }
+  } catch(err){ authNote(AUTH_ERR(err), true); }
+  btn.disabled = false;
+}
+
+function onSignedIn(u){
+  if (!u || recovering) return;
+  if (user && user.id === u.id && state && document.body.classList.contains("v-auth") === false) return;
+  user = u; loadCloud();
+}
+function onSignedOut(){
+  clearTimeout(flushTimer); loadSeq++;
+  user = null; state = null; synced = new Map(); syncedSettings = null; recovering = false;
+  closeSheetSilently();
+  document.getElementById("acct").hidden = true;
+  document.getElementById("authEmail").value = "";
+  showAuth("login", "Wylogowano.");
+}
+async function logout(){
+  if (state) await flush();
+  try { await sb.auth.signOut(); } catch(e){}
+  onSignedOut();
+}
+async function initCloud(){
+  showAuth("loading");
+  if (!window.supabase?.createClient) await new Promise(res => {
+    const sc = document.createElement("script");
+    sc.src = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js";
+    sc.onload = sc.onerror = res; document.head.appendChild(sc);
+  });
+  if (!window.supabase?.createClient) { showAuth("error", "Nie udało się wczytać modułu logowania. Sprawdź internet i odśwież stronę.", true); return; }
+  const h = location.hash;
+  if (/type=recovery/.test(h)) recovering = true;
+  const hashErr = /error_code=([^&]+)/.exec(h);
+  sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  sb.auth.onAuthStateChange((ev, session) => {
+    setTimeout(() => {
+      if (ev === "PASSWORD_RECOVERY") { recovering = true; showAuth("newpass", "Wpisz nowe hasło do konta " + (session?.user?.email || "") + "."); return; }
+      if (ev === "SIGNED_OUT") { if (user) onSignedOut(); return; }
+      if (session?.user) {
+        if (recovering) { showAuth("newpass", "Wpisz nowe hasło do konta " + (session.user.email || "") + "."); return; }
+        if (!user || user.id !== session.user.id) onSignedIn(session.user);
+        else user = session.user;
+      } else if (ev === "INITIAL_SESSION") {
+        showAuth("login", hashErr ? (hashErr[1] === "otp_expired" ? "Ten link już wygasł albo był użyty. Zaloguj się albo poproś o nowy." : "Link nie zadziałał. Spróbuj ponownie.") : "", !!hashErr);
+      }
+      if (/access_token|error_code|type=/.test(location.hash)) history.replaceState(null, "", location.pathname + location.search);
+    }, 0);
+  });
+  document.getElementById("authForm").addEventListener("submit", onAuthSubmit);
+  document.getElementById("authLinks").addEventListener("click", e => {
+    const b = e.target.closest("[data-auth]"); if (!b) return;
+    if (b.dataset.auth === "logout") return logout();
+    showAuth(b.dataset.auth);
+  });
+  document.getElementById("logoutBtn").addEventListener("click", logout);
+}
+function closeSheetSilently(){
+  editId = null; document.getElementById("sheet").hidden = true; document.body.classList.remove("locked");
+}
+
+/* dane z poprzedniej wersji (zapisane tylko w przeglądarce) można przenieść na konto */
+function oldLocalClients(){
+  try {
+    if (localStorage.getItem(LS_KEY + ":przeniesione")) return [];
+    const raw = localStorage.getItem(LS_KEY); if (!raw) return [];
+    return normalize(JSON.parse(raw)).clients.filter(c => !isBlank(c));
+  } catch(e){ return []; }
+}
+function migrateOld(doIt){
+  if (doIt) {
+    const ids = new Set(state.clients.map(c => c.id));
+    const add = oldLocalClients().map(c => { const n = JSON.parse(JSON.stringify(c)); n.id = uid(); n.costs.forEach(k => k.id = uid()); return n; }).filter(c => !ids.has(c.id));
+    state.clients = [...add, ...state.clients];
+    toast(`Przeniesiono ${add.length} ${add.length === 1 ? "klienta" : "klientów"} na konto`);
+    if (monthSel !== "all") monthSel = "all";
+    changed();
+  }
+  try { localStorage.setItem(LS_KEY + ":przeniesione", "1"); } catch(e){}
+  renderMain();
+}
+
 async function connectDb(){
   try {
-    if (!window.claude?.use) return;
+    if (CLOUD || !window.claude?.use) return;
     const [d, u] = await Promise.all([claude.use("db"), claude.use("user")]);
     if (!d || !u) return;
     const id = await u.id();
@@ -345,13 +673,19 @@ function renderMain(){
   if (document.activeElement !== pIn) pIn.value = state.person || "";
   document.getElementById("vatDefault").value = String(state.vat);
   document.getElementById("base").value = state.base;
+  const all = state.clients.filter(c => !isBlank(c));
+  renderMonths(all);
   renderPerson();
-  const shown = state.clients.filter(c => !isBlank(c));
+  const shown = all.filter(inMonth);
+  const picked = shown.filter(inRep);
   const list = document.getElementById("list");
-  list.innerHTML = shown.length ? shown.map(c => {
+  const old = CLOUD ? oldLocalClients() : [];
+  const mig = old.length ? `<div class="migrate"><span>W tej przeglądarce jest ${old.length} ${old.length === 1 ? "klient" : "klientów"} z poprzedniej wersji kalkulatora (bez logowania). Przenieść ich na Twoje konto?</span><div><button type="button" class="lnk" data-act="migrate">Przenieś na konto</button><button type="button" class="lnk" data-act="migrate-skip" style="color:var(--muted)">Nie, pomiń</button></div></div>` : "";
+  const repCom = round2(picked.reduce((a, c) => a + calc(c).com, 0));
+  list.innerHTML = mig + (shown.length ? shown.map(c => {
     const r = calc(c);
     const items = c.costs.filter(k => k.value || (k.kind === "hours" && (k.hours || k.rate)));
-    return `<article class="card"><button type="button" class="card-main" data-open="${c.id}">
+    return `<article class="card${inRep(c) ? "" : " off"}"><button type="button" class="card-main" data-open="${c.id}">
       <div class="row1"><span class="name">${esc(c.name) || "Bez nazwy"}</span><span class="date">${fvLabel(c.invoiceNo) ? esc(fvLabel(c.invoiceNo)) + " · " : ""}${fmtDate(c.date)}</span></div>
       ${c.what ? `<div class="what">${esc(c.what)}</div>` : ""}
       <div class="nums">
@@ -361,8 +695,14 @@ function renderMain(){
       </div>
       ${items.length ? `<div class="cb"><div class="cb-t">Na koszty składają się</div>${items.map(k => `<div class="cb-r"><span>${esc(k.name) || "Koszt"}${costDetail(k) ? `<small>${costDetail(k)}</small>` : ""}</span><span>${fmt(k.value || 0)} zł</span></div>`).join("")}</div>` : ""}
     </button>
-    <div class="card-foot"><button type="button" data-pdf="${c.id}">Pobierz PDF</button></div></article>`;
-  }).join("") + `<button type="button" class="btn ghost pdfall" data-act="pdfall">Pobierz zestawienie wszystkich (PDF)</button><button type="button" class="clear${sureClear ? " sure" : ""}" data-act="clearall">${sureClear ? "Na pewno usunąć wszystkich klientów? Dotknij jeszcze raz" : "Wyczyść cały kalkulator"}</button>` : `<div class="empty"><b>Nie masz jeszcze klientów</b>Wpisz na górze handlowca i stawkę, potem naciśnij „+ Dodaj klienta” na dole.</div>`;
+    <div class="card-foot"><label class="inrep"><input type="checkbox" data-rep="${c.id}"${inRep(c) ? " checked" : ""}> W raporcie</label><button type="button" data-pdf="${c.id}">Pobierz PDF</button></div></article>`;
+  }).join("") + `<div class="repbar"><span>W raporcie: <b>${picked.length} z ${shown.length}</b> · prowizja <b>${fmt(repCom)} zł</b></span><span><button type="button" class="lnk" data-act="repall">Zaznacz wszystkie</button><button type="button" class="lnk" data-act="repnone">Odznacz</button></span></div>`
+    + `<button type="button" class="btn ghost pdfall" data-act="pdfall"${picked.length ? "" : " disabled"}>${picked.length ? `Pobierz raport PDF z zaznaczonych (${picked.length})` : "Zaznacz pozycje, żeby pobrać raport"}</button>`
+    + `<button type="button" class="clear${sureDelSel ? " sure" : ""}" data-act="delsel"${picked.length ? "" : " disabled"}>${!picked.length ? "Usuń zaznaczone (zaznacz ptaszkiem)" : sureDelSel ? `Na pewno usunąć ${picked.length} ${picked.length === 1 ? "pozycję" : picked.length < 5 ? "pozycje" : "pozycji"}? Dotknij jeszcze raz` : `Usuń zaznaczone (${picked.length})`}</button>`
+    + (CLOUD ? "" : `<button type="button" class="clear${sureClear ? " sure" : ""}" data-act="clearall">${sureClear ? "Na pewno usunąć wszystkich klientów? Dotknij jeszcze raz" : "Wyczyść cały kalkulator"}</button>`)
+    : all.length
+      ? `<div class="empty"><b>Brak faktur: ${esc(monthName(monthSel).toLowerCase())}</b>Wybierz inny miesiąc na liście powyżej albo dodaj klienta przyciskiem na dole.</div>`
+      : `<div class="empty"><b>Nie masz jeszcze klientów</b>Wpisz na górze handlowca i stawkę, potem naciśnij „+ Dodaj klienta” na dole.</div>`);
   let com = 0, net = 0, cost = 0;
   shown.forEach(c => { const r = calc(c); com += r.com; net += r.net; cost += r.costs; });
   document.getElementById("sumCom").textContent = fmt(round2(com)) + " zł";
@@ -373,7 +713,20 @@ function renderMain(){
 
 function renderPerson(){
   const nm = (state.person || "").trim();
-  document.getElementById("topLbl").textContent = nm ? `Prowizja łącznie · ${nm}` : "Twoja prowizja łącznie";
+  const m = monthSel === "all" ? "łącznie" : monthName(monthSel).toLowerCase();
+  document.getElementById("topLbl").textContent = nm ? `Prowizja ${m} · ${nm}` : `Twoja prowizja ${m}`;
+}
+function renderMonths(all){
+  const cur = today().slice(0, 7);
+  const set = new Set(all.map(monthOf)); set.add(cur);
+  if (monthSel !== "all") set.add(monthSel);
+  const ms = [...set].sort((a, b) => (b || "0").localeCompare(a || "0"));
+  const sel = document.getElementById("month");
+  sel.innerHTML = ms.map(m => {
+    const n = all.filter(c => monthOf(c) === m).length;
+    return `<option value="${m}">${esc(monthName(m))}${n ? ` (${n})` : ""}</option>`;
+  }).join("") + `<option value="all">Wszystkie miesiące (${all.length})</option>`;
+  sel.value = monthSel;
 }
 
 /* ---------- ekran edycji ---------- */
@@ -390,6 +743,7 @@ function openEditor(id, focusName){
 function closeEditor(){
   const c = cur();
   if (c && isBlank(c)) state.clients = state.clients.filter(x => x !== c);
+  else if (c && monthSel !== "all" && monthOf(c) !== monthSel) setMonth(monthOf(c));
   editId = null;
   document.getElementById("sheet").hidden = true;
   document.body.classList.remove("locked");
@@ -583,10 +937,11 @@ async function pdfClient(c){
   await savePdf(w.doc, `Prowizja - ${safeName(c.name) || "klient"} - ${fmtDate(c.date || today())}.pdf`);
 }
 async function pdfAll(){
-  const list = state.clients.filter(c => !isBlank(c));
-  if (!list.length) { toast("Najpierw dodaj klienta."); return; }
+  const list = state.clients.filter(c => !isBlank(c) && inMonth(c) && inRep(c));
+  if (!list.length) { toast("Zaznacz ptaszkiem pozycje, które mają być w raporcie."); return; }
   const w = newDoc(), d = w.doc;
-  pdfHeader(w, `Wszyscy klienci (${list.length})`);
+  pdfHeader(w, `${monthSel === "all" ? "Wszystkie miesiące" : "Miesiąc: " + monthName(monthSel)} · ${list.length} ${list.length === 1 ? "pozycja" : list.length < 5 ? "pozycje" : "pozycji"}`);
+  list.sort((a, b) => (a.date || "").localeCompare(b.date || ""));
   const rs = list.map(calc);
   const tn = round2(rs.reduce((a, r) => a + r.net, 0)), tc = round2(rs.reduce((a, r) => a + r.costs, 0)), tp = round2(rs.reduce((a, r) => a + r.com, 0));
   const rate = fmtRate(state.rate) || "0";
@@ -649,9 +1004,13 @@ async function pdfAll(){
   leader(w, PL + rw1, X.net - rw2);
   txt(w, fmt(tc), X.cost, {bold: true, size: 12, align: "right"});
   txt(w, fmt(tp) + " zł", PR, {bold: true, size: 12, color: ACC, align: "right"});
-  await savePdf(w.doc, `Zestawienie prowizji - ${fmtDate(today())}.pdf`);
+  const who = safeName(state.person);
+  await savePdf(w.doc, `Zestawienie prowizji${who ? " - " + who : ""} - ${monthSel === "all" ? fmtDate(today()) : monthSel.split("-").reverse().join(".") || "bez daty"}.pdf`);
 }
 async function savePdf(doc, filename){
+  /* polskie litery w nazwie pliku potrafią zepsuć pobieranie w niektórych przeglądarkach */
+  const PLM = {"ą":"a","ć":"c","ę":"e","ł":"l","ń":"n","ó":"o","ś":"s","ź":"z","ż":"z","Ą":"A","Ć":"C","Ę":"E","Ł":"L","Ń":"N","Ó":"O","Ś":"S","Ź":"Z","Ż":"Z"};
+  filename = filename.replace(/[ąćęłńóśźżĄĆĘŁŃÓŚŹŻ]/g, ch => PLM[ch]).normalize("NFKD").replace(/[^\x20-\x7e]/g, "");
   const n = doc.getNumberOfPages();
   for (let i = 1; i <= n; i++) {
     doc.setPage(i); doc.setFont("K", "normal"); doc.setFontSize(8.5); doc.setTextColor(...MUTED);
@@ -672,7 +1031,31 @@ async function savePdf(doc, filename){
 }
 
 /* ---------- zdarzenia ---------- */
+function setMonth(m){
+  monthSel = m;
+  try { localStorage.setItem(MONTH_KEY, m); } catch(e){}
+}
+document.getElementById("month").addEventListener("change", e => { setMonth(e.target.value); renderMain(); });
+document.getElementById("list").addEventListener("change", e => {
+  const cb = e.target.closest("[data-rep]"); if (!cb) return;
+  const c = state.clients.find(x => x.id === cb.dataset.rep); if (!c) return;
+  c.inReport = cb.checked; sureDelSel = false; changed(); renderMain();
+});
 document.getElementById("list").addEventListener("click", e => {
+  if (e.target.closest("[data-rep]") || e.target.closest(".inrep")) return;
+  const ra = e.target.closest('[data-act="repall"],[data-act="repnone"]');
+  if (ra) { sureDelSel = false; const v = ra.dataset.act === "repall"; state.clients.filter(c => !isBlank(c) && inMonth(c)).forEach(c => c.inReport = v); changed(); renderMain(); return; }
+  if (e.target.closest('[data-act="delsel"]')) {
+    clearTimeout(sureDelSelTimer);
+    if (!sureDelSel) { sureDelSel = true; renderMain(); sureDelSelTimer = setTimeout(() => { sureDelSel = false; renderMain(); }, 5000); return; }
+    sureDelSel = false;
+    const del = new Set(state.clients.filter(c => !isBlank(c) && inMonth(c) && inRep(c)).map(c => c.id));
+    state.clients = state.clients.filter(c => !del.has(c.id));
+    changed(); renderMain(); toast(`Usunięto ${del.size} ${del.size === 1 ? "pozycję" : del.size < 5 ? "pozycje" : "pozycji"}`);
+    return;
+  }
+  if (e.target.closest('[data-act="migrate"]')) return migrateOld(true);
+  if (e.target.closest('[data-act="migrate-skip"]')) return migrateOld(false);
   if (e.target.closest('[data-act="clearall"]')) {
     clearTimeout(sureClearTimer);
     if (!sureClear) { sureClear = true; renderMain(); sureClearTimer = setTimeout(() => { sureClear = false; renderMain(); }, 5000); return; }
@@ -749,7 +1132,7 @@ sheet.addEventListener("click", e => {
   }
   if (act === "delcost") { c.costs = c.costs.filter(k => k.id !== b.closest(".cost").dataset.cost); renderForm(); changed(); return; }
   if (act === "dup") {
-    const n = JSON.parse(JSON.stringify(c)); n.id = uid(); n.name = c.name ? c.name + " (kopia)" : ""; n.date = today(); n.invoiceNo = "";
+    const n = JSON.parse(JSON.stringify(c)); n.id = uid(); n.name = c.name ? c.name + " (kopia)" : ""; n.date = today(); n.invoiceNo = ""; n.inReport = true;
     n.costs.forEach(k => k.id = uid());
     state.clients.unshift(n); changed(); openEditor(n.id, true); return;
   }
@@ -761,6 +1144,10 @@ sheet.addEventListener("click", e => {
 
 /* ---------- start: ekran główny, kursor w polu handlowca, jeśli jest puste ---------- */
 (function init(){
+  try { monthSel = localStorage.getItem(MONTH_KEY); } catch(e){}
+  if (!monthSel) monthSel = today().slice(0, 7);
+  if (CLOUD) return initCloud();
+  document.body.classList.remove("v-auth");
   let s = null;
   try { const raw = localStorage.getItem(LS_KEY); if (raw) s = JSON.parse(raw); } catch(e){}
   state = normalize(s);
