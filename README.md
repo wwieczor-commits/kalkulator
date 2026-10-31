@@ -18,14 +18,14 @@ Dane zapisują się w pamięci przeglądarki (localStorage) na danym urządzeniu
 
 ## Opcjonalnie: logowanie i baza (Supabase)
 
-Domyślnie wyłączone. Gdy w `index.html` wpisane są `SUPABASE_URL` i `SUPABASE_ANON_KEY`, kalkulator:
+Włączone (projekt Supabase Wojciecha). Gdy w `index.html` wpisane są `SUPABASE_URL` i `SUPABASE_ANON_KEY`, kalkulator:
 
 - wymaga logowania e-mailem i hasłem (zakładanie konta, reset hasła),
 - zapisuje ustawienia handlowca i wszystkie faktury w bazie Supabase na stałe,
 - każdy handlowiec widzi tylko swoje dane (Row Level Security),
 - proponuje przeniesienie klientów zapisanych wcześniej tylko w przeglądarce.
 
-Gdy te pola są puste (tak jest teraz), kalkulator działa bez logowania, dane w localStorage.
+Gdy te pola są puste, kalkulator działa bez logowania, dane w localStorage.
 
 ### Konfiguracja bazy
 
