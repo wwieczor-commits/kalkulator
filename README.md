@@ -11,12 +11,34 @@ Prosta aplikacja w przeglądarce (działa na telefonie) do liczenia prowizji od 
 - w kafelku klienta widać, z czego składają się koszty,
 - zestawienie w PDF dla jednego klienta albo dla wszystkich (jsPDF z cdnjs, czcionka Carlito na licencji SIL OFL wbudowana w plik).
 
-Dane zapisują się w pamięci przeglądarki (localStorage) na danym urządzeniu.
+## Logowanie i historia faktur (Supabase)
+
+Gdy w `index.html` wpisane są `SUPABASE_URL` i `SUPABASE_ANON_KEY`, kalkulator:
+
+- wymaga logowania e-mailem i hasłem (zakładanie konta, reset hasła),
+- zapisuje ustawienia handlowca i wszystkie faktury w bazie Supabase na stałe,
+- pokazuje historię z filtrem po miesiącach (domyślnie bieżący miesiąc),
+- przy każdej fakturze ma ptaszek „W raporcie”; raport PDF zawiera tylko zaznaczone pozycje z wybranego miesiąca,
+- każdy handlowiec widzi tylko swoje dane (Row Level Security),
+- proponuje przeniesienie klientów zapisanych wcześniej tylko w przeglądarce.
+
+Gdy te pola są puste, kalkulator działa jak wcześniej: bez logowania, dane w localStorage.
+
+### Konfiguracja bazy
+
+1. W Supabase: SQL Editor → New query → wklej `supabase/schema.sql` → Run.
+2. Project Settings → API: skopiuj Project URL i klucz `anon public` do stałych na początku skryptu w `index.html`.
+3. Authentication → URL Configuration: w „Site URL” wpisz adres, pod którym działa aplikacja (np. adres z Netlify), żeby linki z maili (potwierdzenie konta, reset hasła) wracały do aplikacji.
+4. Gdy wszyscy handlowcy założą konta, można wyłączyć zakładanie nowych kont (Authentication → Sign In / Providers → „Allow new users to sign up”) i dodawać kolejne osoby przez „Invite user”.
+
+Klucz `anon public` jest jawny z założenia; dostęp do danych chronią reguły RLS w bazie. Klucza `service_role` nigdy nie wpisuj do pliku.
 
 ## Uruchomienie
 
-To jeden plik `index.html` bez zależności. Wystarczy go otworzyć w przeglądarce
-albo włączyć GitHub Pages (Settings → Pages → branch `main`, folder `/`).
+To jeden plik `index.html`. Można go wystawić pod linkiem na kilka sposobów:
+
+- **Netlify Drop**: wejdź na https://app.netlify.com/drop i przeciągnij folder z plikiem `index.html`,
+- **GitHub Pages**: Settings → Pages → branch `main`, folder `/`.
 
 ---
 
