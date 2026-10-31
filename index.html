@@ -119,6 +119,7 @@ body:not(.v-auth) #auth{display:none!important}
 .card .nums .com .v{color:var(--accent);font-weight:800;font-size:17px}
 .card .nums .com .k{color:var(--accent)}
 .clear{background:none;border:1px solid var(--line);color:var(--danger);border-radius:12px;padding:13px;font-weight:600;margin-top:14px}
+.clear:disabled{opacity:.5;cursor:default}
 .clear.sure{background:var(--danger-soft);border-color:var(--danger);font-weight:700}
 .empty{text-align:center;padding:32px 18px;color:var(--muted);background:var(--card);border:1px dashed var(--line);border-radius:14px}
 .empty b{display:block;color:var(--ink);font-size:17px;margin-bottom:4px}
@@ -256,7 +257,7 @@ input::placeholder{color:var(--muted);opacity:.7}
   <div class="inner">
     <div class="h2"><h2>Klienci</h2><label class="mfilter"><span class="sr">Pokaż miesiąc</span><select id="month" aria-label="Pokaż miesiąc"></select></label></div>
     <div class="list" id="list"></div>
-    <p class="copy">© 2026 Wojciech Wieczorek</p>
+    <p class="copy">© 2026 Wojciech Wieczorek · wersja 31.10.2026 z logowaniem</p>
   </div>
 </main>
 
@@ -692,7 +693,7 @@ function renderMain(){
     <div class="card-foot"><label class="inrep"><input type="checkbox" data-rep="${c.id}"${inRep(c) ? " checked" : ""}> W raporcie</label><button type="button" data-pdf="${c.id}">Pobierz PDF</button></div></article>`;
   }).join("") + `<div class="repbar"><span>W raporcie: <b>${picked.length} z ${shown.length}</b> · prowizja <b>${fmt(repCom)} zł</b></span><span><button type="button" class="lnk" data-act="repall">Zaznacz wszystkie</button><button type="button" class="lnk" data-act="repnone">Odznacz</button></span></div>`
     + `<button type="button" class="btn ghost pdfall" data-act="pdfall"${picked.length ? "" : " disabled"}>${picked.length ? `Pobierz raport PDF z zaznaczonych (${picked.length})` : "Zaznacz pozycje, żeby pobrać raport"}</button>`
-    + (picked.length ? `<button type="button" class="clear${sureDelSel ? " sure" : ""}" data-act="delsel">${sureDelSel ? `Na pewno usunąć ${picked.length} ${picked.length === 1 ? "pozycję" : picked.length < 5 ? "pozycje" : "pozycji"}? Dotknij jeszcze raz` : `Usuń zaznaczone (${picked.length})`}</button>` : "")
+    + `<button type="button" class="clear${sureDelSel ? " sure" : ""}" data-act="delsel"${picked.length ? "" : " disabled"}>${!picked.length ? "Usuń zaznaczone (zaznacz ptaszkiem)" : sureDelSel ? `Na pewno usunąć ${picked.length} ${picked.length === 1 ? "pozycję" : picked.length < 5 ? "pozycje" : "pozycji"}? Dotknij jeszcze raz` : `Usuń zaznaczone (${picked.length})`}</button>`
     + (CLOUD ? "" : `<button type="button" class="clear${sureClear ? " sure" : ""}" data-act="clearall">${sureClear ? "Na pewno usunąć wszystkich klientów? Dotknij jeszcze raz" : "Wyczyść cały kalkulator"}</button>`)
     : all.length
       ? `<div class="empty"><b>Brak faktur: ${esc(monthName(monthSel).toLowerCase())}</b>Wybierz inny miesiąc na liście powyżej albo dodaj klienta przyciskiem na dole.</div>`
