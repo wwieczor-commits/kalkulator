@@ -297,6 +297,7 @@ let editId = null;
 let sureDelete = false;
 let sureClear = false, sureClearTimer = null;
 let monthSel = null;
+let sureDelSel = false, sureDelSelTimer = null;
 
 const uid = () => {
   if (window.crypto?.randomUUID) return crypto.randomUUID();
@@ -691,6 +692,7 @@ function renderMain(){
     <div class="card-foot"><label class="inrep"><input type="checkbox" data-rep="${c.id}"${inRep(c) ? " checked" : ""}> W raporcie</label><button type="button" data-pdf="${c.id}">Pobierz PDF</button></div></article>`;
   }).join("") + `<div class="repbar"><span>W raporcie: <b>${picked.length} z ${shown.length}</b> · prowizja <b>${fmt(repCom)} zł</b></span><span><button type="button" class="lnk" data-act="repall">Zaznacz wszystkie</button><button type="button" class="lnk" data-act="repnone">Odznacz</button></span></div>`
     + `<button type="button" class="btn ghost pdfall" data-act="pdfall"${picked.length ? "" : " disabled"}>${picked.length ? `Pobierz raport PDF z zaznaczonych (${picked.length})` : "Zaznacz pozycje, żeby pobrać raport"}</button>`
+    + (picked.length ? `<button type="button" class="clear${sureDelSel ? " sure" : ""}" data-act="delsel">${sureDelSel ? `Na pewno usunąć ${picked.length} ${picked.length === 1 ? "pozycję" : picked.length < 5 ? "pozycje" : "pozycji"}? Dotknij jeszcze raz` : `Usuń zaznaczone (${picked.length})`}</button>` : "")
     + (CLOUD ? "" : `<button type="button" class="clear${sureClear ? " sure" : ""}" data-act="clearall">${sureClear ? "Na pewno usunąć wszystkich klientów? Dotknij jeszcze raz" : "Wyczyść cały kalkulator"}</button>`)
     : all.length
       ? `<div class="empty"><b>Brak faktur: ${esc(monthName(monthSel).toLowerCase())}</b>Wybierz inny miesiąc na liście powyżej albo dodaj klienta przyciskiem na dole.</div>`
@@ -1028,12 +1030,21 @@ document.getElementById("month").addEventListener("change", e => { setMonth(e.ta
 document.getElementById("list").addEventListener("change", e => {
   const cb = e.target.closest("[data-rep]"); if (!cb) return;
   const c = state.clients.find(x => x.id === cb.dataset.rep); if (!c) return;
-  c.inReport = cb.checked; changed(); renderMain();
+  c.inReport = cb.checked; sureDelSel = false; changed(); renderMain();
 });
 document.getElementById("list").addEventListener("click", e => {
   if (e.target.closest("[data-rep]") || e.target.closest(".inrep")) return;
   const ra = e.target.closest('[data-act="repall"],[data-act="repnone"]');
-  if (ra) { const v = ra.dataset.act === "repall"; state.clients.filter(c => !isBlank(c) && inMonth(c)).forEach(c => c.inReport = v); changed(); renderMain(); return; }
+  if (ra) { sureDelSel = false; const v = ra.dataset.act === "repall"; state.clients.filter(c => !isBlank(c) && inMonth(c)).forEach(c => c.inReport = v); changed(); renderMain(); return; }
+  if (e.target.closest('[data-act="delsel"]')) {
+    clearTimeout(sureDelSelTimer);
+    if (!sureDelSel) { sureDelSel = true; renderMain(); sureDelSelTimer = setTimeout(() => { sureDelSel = false; renderMain(); }, 5000); return; }
+    sureDelSel = false;
+    const del = new Set(state.clients.filter(c => !isBlank(c) && inMonth(c) && inRep(c)).map(c => c.id));
+    state.clients = state.clients.filter(c => !del.has(c.id));
+    changed(); renderMain(); toast(`Usunięto ${del.size} ${del.size === 1 ? "pozycję" : del.size < 5 ? "pozycje" : "pozycji"}`);
+    return;
+  }
   if (e.target.closest('[data-act="migrate"]')) return migrateOld(true);
   if (e.target.closest('[data-act="migrate-skip"]')) return migrateOld(false);
   if (e.target.closest('[data-act="clearall"]')) {
