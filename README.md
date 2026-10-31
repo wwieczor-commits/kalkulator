@@ -9,20 +9,23 @@ Prosta aplikacja w przeglądarce (działa na telefonie) do liczenia prowizji od 
 - pole „Kogo dotyczy prowizja” (imię i nazwisko widoczne w nagłówku PDF),
 - suma prowizji ze wszystkich klientów na górze ekranu,
 - w kafelku klienta widać, z czego składają się koszty,
-- zestawienie w PDF dla jednego klienta albo dla wszystkich (jsPDF z cdnjs, czcionka Carlito na licencji SIL OFL wbudowana w plik).
+- historia z wyborem miesiąca (domyślnie bieżący); suma na górze dotyczy wybranego miesiąca,
+- przy każdej fakturze ptaszek „W raporcie”; raport PDF zawiera tylko zaznaczone pozycje z wybranego miesiąca,
+- przycisk „Usuń zaznaczone” (z potwierdzeniem) usuwa zaznaczone pozycje z wybranego miesiąca,
+- zestawienie w PDF dla jednego klienta albo dla zaznaczonych (jsPDF z cdnjs, czcionka Carlito na licencji SIL OFL wbudowana w plik).
 
-## Logowanie i historia faktur (Supabase)
+Dane zapisują się w pamięci przeglądarki (localStorage) na danym urządzeniu.
 
-Gdy w `index.html` wpisane są `SUPABASE_URL` i `SUPABASE_ANON_KEY`, kalkulator:
+## Opcjonalnie: logowanie i baza (Supabase)
+
+Domyślnie wyłączone. Gdy w `index.html` wpisane są `SUPABASE_URL` i `SUPABASE_ANON_KEY`, kalkulator:
 
 - wymaga logowania e-mailem i hasłem (zakładanie konta, reset hasła),
 - zapisuje ustawienia handlowca i wszystkie faktury w bazie Supabase na stałe,
-- pokazuje historię z filtrem po miesiącach (domyślnie bieżący miesiąc),
-- przy każdej fakturze ma ptaszek „W raporcie”; raport PDF zawiera tylko zaznaczone pozycje z wybranego miesiąca,
 - każdy handlowiec widzi tylko swoje dane (Row Level Security),
 - proponuje przeniesienie klientów zapisanych wcześniej tylko w przeglądarce.
 
-Gdy te pola są puste, kalkulator działa jak wcześniej: bez logowania, dane w localStorage.
+Gdy te pola są puste (tak jest teraz), kalkulator działa bez logowania, dane w localStorage.
 
 ### Konfiguracja bazy
 

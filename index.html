@@ -9,7 +9,6 @@
 <title>Kalkulator prowizji</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js"></script>
 <style>
 :root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 body{margin:0}
@@ -257,7 +256,7 @@ input::placeholder{color:var(--muted);opacity:.7}
   <div class="inner">
     <div class="h2"><h2>Klienci</h2><label class="mfilter"><span class="sr">Pokaż miesiąc</span><select id="month" aria-label="Pokaż miesiąc"></select></label></div>
     <div class="list" id="list"></div>
-    <p class="copy">© 2026 Wojciech Wieczorek · wersja 31.10.2026 z logowaniem</p>
+    <p class="copy">© 2026 Wojciech Wieczorek · wersja 31.10.2026</p>
   </div>
 </main>
 
@@ -281,9 +280,10 @@ input::placeholder{color:var(--muted);opacity:.7}
 <script>
 /* ===== Baza danych Supabase =====
    Wpisz tu adres projektu i klucz "anon public" (Project Settings -> API).
-   Gdy oba pola są puste, kalkulator działa jak wcześniej: bez logowania, dane tylko w tej przeglądarce. */
-const SUPABASE_URL = "https://aypxpsuzobcjoiquucws.supabase.co";
-const SUPABASE_ANON_KEY = "sb_publishable_nZgzi9fshdkkMua5AqeHyw_ITvsk2X2";
+   Gdy oba pola są puste, kalkulator działa bez logowania, a dane są tylko w tej przeglądarce.
+   Projekt Wojciecha: https://aypxpsuzobcjoiquucws.supabase.co (klucz publishable z Supabase -> API Keys). */
+const SUPABASE_URL = "";
+const SUPABASE_ANON_KEY = "";
 const CLOUD = !!(SUPABASE_URL && SUPABASE_ANON_KEY);
 
 const LS_KEY = "kalk-prowizji-v1";
@@ -585,8 +585,13 @@ async function logout(){
   try { await sb.auth.signOut(); } catch(e){}
   onSignedOut();
 }
-function initCloud(){
+async function initCloud(){
   showAuth("loading");
+  if (!window.supabase?.createClient) await new Promise(res => {
+    const sc = document.createElement("script");
+    sc.src = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js";
+    sc.onload = sc.onerror = res; document.head.appendChild(sc);
+  });
   if (!window.supabase?.createClient) { showAuth("error", "Nie udało się wczytać modułu logowania. Sprawdź internet i odśwież stronę.", true); return; }
   const h = location.hash;
   if (/type=recovery/.test(h)) recovering = true;
@@ -1000,9 +1005,12 @@ async function pdfAll(){
   txt(w, fmt(tc), X.cost, {bold: true, size: 12, align: "right"});
   txt(w, fmt(tp) + " zł", PR, {bold: true, size: 12, color: ACC, align: "right"});
   const who = safeName(state.person);
-  await savePdf(w.doc, `Zestawienie prowizji${who ? " - " + who : ""} - ${monthSel === "all" ? fmtDate(today()) : monthName(monthSel)}.pdf`);
+  await savePdf(w.doc, `Zestawienie prowizji${who ? " - " + who : ""} - ${monthSel === "all" ? fmtDate(today()) : monthSel.split("-").reverse().join(".") || "bez daty"}.pdf`);
 }
 async function savePdf(doc, filename){
+  /* polskie litery w nazwie pliku potrafią zepsuć pobieranie w niektórych przeglądarkach */
+  const PLM = {"ą":"a","ć":"c","ę":"e","ł":"l","ń":"n","ó":"o","ś":"s","ź":"z","ż":"z","Ą":"A","Ć":"C","Ę":"E","Ł":"L","Ń":"N","Ó":"O","Ś":"S","Ź":"Z","Ż":"Z"};
+  filename = filename.replace(/[ąćęłńóśźżĄĆĘŁŃÓŚŹŻ]/g, ch => PLM[ch]).normalize("NFKD").replace(/[^\x20-\x7e]/g, "");
   const n = doc.getNumberOfPages();
   for (let i = 1; i <= n; i++) {
     doc.setPage(i); doc.setFont("K", "normal"); doc.setFontSize(8.5); doc.setTextColor(...MUTED);
