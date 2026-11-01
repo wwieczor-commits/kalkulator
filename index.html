@@ -43,7 +43,8 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
 .cfg{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;display:grid;gap:12px}
 .cfg-row{display:grid;grid-template-columns:150px 170px 1fr;gap:10px;align-items:end}
 @media (max-width:520px){.cfg-row{grid-template-columns:1fr 1fr}.cfg-row .base{grid-column:1/-1}}
-.top{background:var(--accent);color:var(--accent-ink);padding-block:18px 20px}
+.top{padding-block:0}
+.top .inner{background:var(--accent);color:var(--accent-ink);border-radius:14px;padding:18px 16px 20px}
 .top .lbl{font-size:14px;font-weight:600;opacity:.9}
 .top .total{font-size:40px;font-weight:800;line-height:1.1;letter-spacing:-.01em;margin-top:2px}
 .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}
